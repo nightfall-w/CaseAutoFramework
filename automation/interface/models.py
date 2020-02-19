@@ -2,7 +2,7 @@ from django.db import models
 from standard.model import JSONField
 
 
-class InterFaceModel(models.Model):
+class InterfaceModel(models.Model):
     MODE_LIST = [
         (1, 'GET'), (2, 'POST'), (3, 'PUT'), (4, 'DELETE'), (5, 'PATCH')
     ]
@@ -20,3 +20,6 @@ class InterFaceModel(models.Model):
     class Meta:
         db_table = 'interface'
         verbose_name = verbose_name_plural = "接口"
+
+    def __str__(self):
+        return self.name

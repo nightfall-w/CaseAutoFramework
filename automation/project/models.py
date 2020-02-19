@@ -14,3 +14,6 @@ class ProjectModel(models.Model):
     class Meta:
         db_table = 'project'
         verbose_name = verbose_name_plural = "项目"
+
+    def __str__(self):
+        return self.name
