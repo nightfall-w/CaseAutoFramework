@@ -13,4 +13,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     path('api/docs/', include_docs_urls(title='API文档')),
+    path('api/case/', include('case.urls', namespace='case')),
+    path('api/user/', include('user.urls', namespace='user')),
 ]
