@@ -1,14 +1,17 @@
 # -*- coding=utf-8 -*-
 import re
-import json
+
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from standard.enum import ResponseCode
 
 
+@method_decorator(csrf_exempt, name='post')
 class RegisterView(APIView):
 
     def post(self, request):
@@ -17,13 +20,9 @@ class RegisterView(APIView):
         :param request: 包含了提交的数据以及上下文
         :return: 返回注册结果
         '''
-        try:
-            post_data = json.loads(request.body)
-        except:
-            return Response(ResponseCode.REQUEST_DATA_ERROR.value)
-        email = post_data.get('email', None)
-        username = post_data.get('username', None)
-        password = post_data.get('password', None)
+        email = request.data.get('email', None)
+        username = request.data.get('username', None)
+        password = request.data.get('password', None)
 
         if not all([email, username, password]):
             response = ResponseCode.REQUEST_DATA_ERROR.value
@@ -44,6 +43,7 @@ class RegisterView(APIView):
         return Response(response)
 
 
+@method_decorator(csrf_exempt, name='post')
 class LoginView(APIView):
 
     def post(self, request):
@@ -52,12 +52,8 @@ class LoginView(APIView):
         :param request:包含了提交的数据以及上下文
         :return: 返回登录结果
         '''
-        try:
-            post_data = json.loads(request.body)
-        except:
-            return Response(ResponseCode.REQUEST_DATA_ERROR.value)
-        username = post_data.get('username', None)
-        password = post_data.get('password', None)
+        username = request.data.get('username', None)
+        password = request.data.get('password', None)
 
         if not all([username, password]):
             return Response(ResponseCode.REQUEST_DATA_ERROR.value)
