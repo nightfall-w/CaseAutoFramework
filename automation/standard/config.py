@@ -19,6 +19,6 @@ class ConfigParser():
             cf = configparser.ConfigParser()
             cf.read(config_path, encoding='utf8')  # 注意setting.ini配置文件的路径
             value = cf.get(sector, item)
-            cls.config_dic = value
+            cls.config_dic[sector][item] = value
         finally:
             return value
