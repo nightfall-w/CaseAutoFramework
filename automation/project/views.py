@@ -1,9 +1,10 @@
-from rest_framework import viewsets, pagination
+from rest_framework import viewsets, pagination, permissions
 from .serializers import ProjectSerializer
 from .models import ProjectModel
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
+    permission_classes = (permissions.IsAuthenticated,)
     serializer_class = ProjectSerializer
     pagination_class = pagination.LimitOffsetPagination
 

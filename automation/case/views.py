@@ -1,15 +1,19 @@
 import os
 import re
 from threading import Thread
-from django.conf import settings
+
 import git
+from django.conf import settings
 from django.http import JsonResponse
-from rest_framework import permissions
+from rest_framework import permissions, pagination, viewsets, status
 from rest_framework.decorators import action
+from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 
 from Logger import logger
+from case.models import CaseModel, CaseTypeModel
+from case.serializers import CaseSerializer, CaseTypeSerializer
 from standard.config import ConfigParser
 from standard.enum import CaseStatus
 from standard.enum import ResponseCode
@@ -17,9 +21,9 @@ from .models import GitCase
 
 
 class PathTree(object):
-    def __init__(self):
-        self.index = 1
-        self.suffixs = ConfigParser.get_config('case', 'suffixs')
+    def __init__(self, branch):
+        self.index = 0
+        self.branch = branch
 
     def path_tree(self, path):
         tree = dict()
@@ -28,7 +32,7 @@ class PathTree(object):
             tree["id"] = self.index
             tree["label"] = os.path.basename(path)
             tree['children'] = [self.path_tree(os.path.join(path, x)) for x in os.listdir(path)]
-        elif os.path.splitext(path)[1] in self.suffixs:
+        elif not os.path.isdir(path):
             tree["id"] = self.index
             tree["label"] = os.path.basename(path)
             tree['filepath'] = path
@@ -106,7 +110,7 @@ class CaseTree(APIView):
         """
         获取case信息
         """
-        case_branch = request.data.get('branch')
+        case_branch = request.data.get('branch', 'master')
         case_name = request.data.get('label')
         case_path = request.data.get('path')
         if case_path:
@@ -117,5 +121,49 @@ class CaseTree(APIView):
                 return JsonResponse({"case_name": case_name, "case_data": case_data})
         else:
             # 没有指定到case路径 则返回case目录树
-            case_tree = PathTree().path_tree(os.path.join(settings.BASE_DIR, 'case_house', case_branch))
-            return JsonResponse({"branch": case_branch, "case_tree": case_tree})
+            case_tree = PathTree(case_branch).path_tree(os.path.join(settings.BASE_DIR, 'case_house', case_branch))
+            return JsonResponse({"branch": case_branch, "case_tree": [case_tree]})
+
+
+class CaseViewSet(viewsets.ModelViewSet):
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = CaseSerializer
+    pagination_class = pagination.LimitOffsetPagination
+
+    def get_queryset(self):
+        return CaseModel.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        cases = self.get_queryset()
+        page = self.paginate_queryset(cases)
+        serializer = self.get_serializer(page, many=True)
+        return self.get_paginated_response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        case_type_id = request.data.get('case_type_id')
+        case_type_obj = CaseTypeModel.objects.filter(id=case_type_id).first()
+        if not case_type_obj:
+            return Response({'respError': 'case类型不存在'}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        case_data = request.data
+        case_data.pop('case_type_id')
+        case_data['case_type'] = case_type_obj
+        serializer = self.get_serializer(data=case_data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+
+class CaseTypeViewSet(viewsets.ModelViewSet):
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = CaseTypeSerializer
+    pagination_class = pagination.LimitOffsetPagination
+
+    def get_queryset(self):
+        return CaseTypeModel.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        case_types = self.get_queryset()
+        page = self.paginate_queryset(case_types)
+        serializer = self.get_serializer(page, many=True)
+        return self.get_paginated_response(serializer.data)

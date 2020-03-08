@@ -1,10 +1,11 @@
-from rest_framework import viewsets, pagination
+from rest_framework import viewsets, pagination, permissions
 
 from .models import InterfaceModel
 from .serializers import InterfaceSerializer
 
 
 class InterfaceViewSet(viewsets.ModelViewSet):
+    permission_classes = (permissions.IsAuthenticated,)
     serializer_class = InterfaceSerializer
     pagination_class = pagination.LimitOffsetPagination
 
