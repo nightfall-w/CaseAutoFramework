@@ -1,11 +1,14 @@
 # -*- coding=utf-8 -*-
 import re
 
+import coreapi
+import coreschema
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.response import Response
+from rest_framework.schemas import AutoSchema
 from rest_framework.views import APIView
 
 from standard.enum import ResponseCode
@@ -13,13 +16,18 @@ from standard.enum import ResponseCode
 
 @method_decorator(csrf_exempt, name='post')
 class RegisterView(APIView):
+    Schema = AutoSchema(manual_fields=[
+        coreapi.Field(name="username", required=True, location="form", schema=coreschema.String(description='用户名')),
+        coreapi.Field(name="password", required=True, location="form", schema=coreschema.String(description='密码')),
+        coreapi.Field(name="email", required=True, location="form", schema=coreschema.String(description='邮箱地址')),
+    ])
+    schema = Schema
 
     def post(self, request):
         '''
-        注册
-        :param request: 包含了提交的数据以及上下文
-        :return: 返回注册结果
+        【用户注册】
         '''
+
         email = request.data.get('email', None)
         username = request.data.get('username', None)
         password = request.data.get('password', None)
@@ -45,13 +53,16 @@ class RegisterView(APIView):
 
 @method_decorator(csrf_exempt, name='post')
 class LoginView(APIView):
+    Schema = AutoSchema(manual_fields=[
+        coreapi.Field(name="username", required=True, location="form", schema=coreschema.String(description='用户名')),
+        coreapi.Field(name="password", required=True, location="form", schema=coreschema.String(description='密码'))
+    ])
+    schema = Schema
 
     def post(self, request):
-        '''
-        处理登录请求
-        :param request:包含了提交的数据以及上下文
-        :return: 返回登录结果
-        '''
+        """
+        【用户登录】
+        """
         username = request.data.get('username', None)
         password = request.data.get('password', None)
 
