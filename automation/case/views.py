@@ -2,12 +2,15 @@ import os
 import re
 from threading import Thread
 
+import coreapi
+import coreschema
 import git
 from django.conf import settings
 from django.http import JsonResponse
 from rest_framework import permissions, pagination, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.schemas import AutoSchema
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 
@@ -39,11 +42,14 @@ class PathTree(object):
         return tree
 
 
-class GitTool(GenericViewSet):
+class GitTool(APIView):
     """
     通过git拉取case代码
     """
-
+    Schema = AutoSchema(manual_fields=[
+        coreapi.Field(name="branch", required=False, location="form", schema=coreschema.String(description='case所在分支')),
+    ])
+    schema = Schema
     permission_classes = (permissions.IsAuthenticated,)  # 登陆成功的token
 
     def git_pull(self, branch, case_address, branch_path):
@@ -86,8 +92,7 @@ class GitTool(GenericViewSet):
         case_obj.status = CaseStatus.DONE.value
         case_obj.save()
 
-    @action(methods=['get'], detail=False)
-    def case_pull(self, request):
+    def post(self, request):
         branch = request.data.get('branch', 'master')
         case_house = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'case_house')
         branch_path = os.path.join(case_house, branch)
@@ -104,21 +109,32 @@ class CaseTree(APIView):
     """
     case管理器
     """
+    Schema = AutoSchema(manual_fields=[
+        coreapi.Field(name="branch", required=False, location="query",
+                      schema=coreschema.String(description='case所在分支')),
+        coreapi.Field(name="label", required=False, location="query", schema=coreschema.String(description='case名称')),
+        coreapi.Field(name="path", required=False, location="query", schema=coreschema.String(description='case路径')),
+    ])
+    schema = Schema
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
         """
         获取case信息
         """
-        case_branch = request.data.get('branch', 'master')
-        case_name = request.data.get('label')
-        case_path = request.data.get('path')
+        case_branch = request.query_params.dict().get('branch', 'master')
+        case_name = request.query_params.dict().get('label')
+        case_path = request.query_params.dict().get('path')
         if case_path:
             # 有指定文件 表示要获取case详情
-            with open(os.path.join(settings.BASE_DIR, 'case_house', case_branch, case_path), 'r',
-                      encoding='utf-8') as f:
-                case_data = f.read()
-                return JsonResponse({"case_name": case_name, "case_data": case_data})
+            try:
+                with open(os.path.join(settings.BASE_DIR, 'case_house', case_branch, case_path), 'r',
+                          encoding='utf-8') as f:
+                    case_data = f.read()
+                    return JsonResponse({"case_name": case_name, "case_data": case_data})
+            except FileNotFoundError as es:
+                logger.error(es)
+                return JsonResponse({"error": "case:{}不存在".format(case_name)})
         else:
             # 没有指定到case路径 则返回case目录树
             case_tree = PathTree(case_branch).path_tree(os.path.join(settings.BASE_DIR, 'case_house', case_branch))
