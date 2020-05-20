@@ -8,11 +8,9 @@ import git
 from django.conf import settings
 from django.http import JsonResponse
 from rest_framework import permissions, pagination, viewsets, status
-from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.schemas import AutoSchema
 from rest_framework.views import APIView
-from rest_framework.viewsets import GenericViewSet
 
 from Logger import logger
 from case.models import CaseModel, CaseTypeModel
@@ -120,7 +118,7 @@ class CaseTree(APIView):
 
     def get(self, request, *args, **kwargs):
         """
-        获取case信息
+        【获取case信息】
         """
         case_branch = request.query_params.dict().get('branch', 'master')
         case_name = request.query_params.dict().get('label')
