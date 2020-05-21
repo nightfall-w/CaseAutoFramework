@@ -26,16 +26,16 @@ class InterfaceModel(models.Model):
         return self.name
 
 
-class InterfaceTaskModel(models.Model):
+class InterfaceJobModel(models.Model):
     interface_id = models.IntegerField(verbose_name="接口id", null=False, help_text="接口id")
-    task_id = models.CharField(verbose_name="任务id", max_length=30, null=False, help_text="任务id")
+    test_plan_id = models.CharField(verbose_name="测试计划id", max_length=30, null=False, help_text="测试计划id")
     state = models.CharField(verbose_name="接口测试状态", null=False, max_length=10, help_text="接口测试状态")
-    create_data = models.DateTimeField(verbose_name="接口测试状态", auto_now_add=True, help_text="接口测试状态")
+    create_data = models.DateTimeField(verbose_name="创建时间", auto_now_add=True, help_text="创建时间")
     result = models.TextField(verbose_name="接口响应结果", null=False, help_text="接口响应结果")
 
     class Meta:
-        db_table = "interface_task"
+        db_table = "interface_job"
         verbose_name = verbose_name_plural = "接口任务"
 
     def __str__(self):
-        return self.task_id
+        return str(self.test_plan_id) + "&&" + str(self.interface_id)

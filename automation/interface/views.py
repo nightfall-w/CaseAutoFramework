@@ -2,10 +2,10 @@ import json
 
 from rest_framework import viewsets, pagination, permissions
 from rest_framework.response import Response
-from rest_framework.views import APIView
+
 from .models import InterfaceModel
-from .serializers import InterfaceSerializer, InterfaceTaskSerializer
-from Logger import logger
+from .serializers import InterfaceSerializer
+
 
 
 class InterfaceViewSet(viewsets.ModelViewSet):
@@ -28,29 +28,3 @@ class InterfaceViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response(serializer.data)
 
-
-class InterfaceTaskViewSet(viewsets.ModelViewSet):
-    permission_classes = (permissions.IsAuthenticated,)
-    serializer_class = InterfaceTaskSerializer
-    pagination_class = pagination.LimitOffsetPagination
-
-
-class InterfaceTrigger(APIView):
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def post(self, request):
-        try:
-            interfaceIds = json.loads(request.data.get('interfaceIds', "[]"))
-        except Exception as es:
-            logger.error(es)
-            return Response({"error": "不符合格式的接口列表"})
-        if not interfaceIds:
-            return Response({"error": "接口id未提供"})
-        for id in interfaceIds:
-            interfaceObj = InterfaceModel.objects.filter(id=id).first()
-            if not interfaceObj:
-                return Response({"error": "接口名为{},地址为{}的api不存在".format(interfaceObj.name, interfaceObj.addr)})
-        else:
-            # 执行提交的api
-            # TODO
-            pass

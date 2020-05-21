@@ -4,13 +4,13 @@ from rest_framework.documentation import include_docs_urls
 from rest_framework.routers import DefaultRouter
 
 from case.views import CaseViewSet, CaseTypeViewSet
-from interface.views import InterfaceViewSet, InterfaceTaskViewSet
+from interface.views import InterfaceViewSet
 from project.views import ProjectViewSet
 
 router = DefaultRouter()
 router.register(r'project', ProjectViewSet, basename='api-project')
 router.register(r'interface', InterfaceViewSet, basename='api-interface')
-router.register(r'interfaceTask', InterfaceTaskViewSet, basename='api-interfaceTask')
+# router.register(r'interfaceTask', InterfaceTaskViewSet, basename='api-interfaceTask')
 router.register(r'case', CaseViewSet, basename='api-case')
 router.register(r'caseType', CaseTypeViewSet, basename='api-case-type')
 

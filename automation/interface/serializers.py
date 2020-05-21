@@ -2,7 +2,7 @@ import json
 
 from rest_framework.validators import UniqueTogetherValidator
 
-from interface.models import InterfaceModel, InterfaceTaskModel
+from interface.models import InterfaceModel, InterfaceJobModel
 from rest_framework import serializers
 
 
@@ -27,10 +27,3 @@ class InterfaceSerializer(serializers.ModelSerializer):
                 except Exception as es:
                     raise serializers.ValidationError('字段{}不是json格式'.format(item))
         return attrs
-
-
-class InterfaceTaskSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = InterfaceTaskModel
-        fields = '__all__'
-        depth = 1
