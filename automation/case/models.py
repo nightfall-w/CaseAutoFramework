@@ -35,7 +35,7 @@ class CaseModel(models.Model):
                                   verbose_name="case类型")
     case_path = models.CharField(max_length=200, verbose_name="case路径", help_text="case路径")
     create_user = models.CharField(max_length=20, verbose_name="创建人", help_text="case创建人")
-    create_time = models.DateTimeField(auto_now_add=True, help_text="case创建时间")
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name="case创建时间", help_text="case创建时间")
 
     class Meta:
         db_table = "case"
