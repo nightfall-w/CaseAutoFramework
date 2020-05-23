@@ -6,9 +6,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from Logger import logger
-from interface.models import InterfaceModel
+from interface.models import InterfaceModel, InterfaceJobModel
 from testplan.models import ApiTestPlanModel
-from utils.job_status_enum import ApiTestPlanState
+from utils.job_status_enum import ApiTestPlanState, ApiJobState
 
 
 class TestPlanView(APIView):
@@ -31,5 +31,11 @@ class TestPlanView(APIView):
                 return Response({"error": "接口名为{},地址为{}的api不存在".format(interfaceObj.name, interfaceObj.addr)})
         else:
             # 创建接口测试计划
-            ApiTestPlanModel.objects.create(name=test_plan_name, plan_id=uuid.uuid4(), state=ApiTestPlanState.WAITING)
-            pass
+            plan_id = uuid.uuid4()
+            api_testplan_obj = ApiTestPlanModel.objects.create(name=test_plan_name, plan_id=plan_id,
+                                                               state=ApiTestPlanState.WAITING)
+            if not api_testplan_obj:
+                return Response({"error": "创建api测试计划失败"})
+            for interfaceId in interfaceIds:
+                InterfaceJobModel.objects.create(interface_id=interfaceId, test_plan_id=plan_id,
+                                                 state=ApiJobState.WAITING)

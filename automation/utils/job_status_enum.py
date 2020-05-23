@@ -1,9 +1,10 @@
 class ApiTestPlanState:
     WAITING = "WAITING"
-    DOING = "DOING"
-    DONE = "DONE"
+    RUNNING = "RUNNING"
+    FINISH = "FINISH"
 
 
 class ApiJobState:
+    WAITING = "WAITING"
     SUCCESS = "SUCCESS"
     FAILED = "FAILED"
