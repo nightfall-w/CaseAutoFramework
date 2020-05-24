@@ -39,3 +39,4 @@ class TestPlanView(APIView):
             for interfaceId in interfaceIds:
                 InterfaceJobModel.objects.create(interface_id=interfaceId, test_plan_id=plan_id,
                                                  state=ApiJobState.WAITING)
+

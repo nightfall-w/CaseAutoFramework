@@ -1,8 +1,15 @@
 # -*- coding=utf-8 -*-
-class ApiRunner:
-    def __init__(self, api_ids):
-        self.api_ids = api_ids
+from interface.models import InterfaceJobModel
+import requests
 
+
+class ApiRunner:
+    def __init__(self, test_plan_id):
+        self.test_plan_id = test_plan_id
+
+    def processing_plant(self, interface):
+        
     def distributor(self):
         # TODO
-        pass
+        interfaces = InterfaceJobModel.objects.filter(test_plan_id=self.test_plan_id)
+        for interface in interfaces:
