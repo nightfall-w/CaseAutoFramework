@@ -29,15 +29,15 @@ class ApiRunner:
         # 获取interface对象
         interface = InterfaceModel.objects.get(id=interface.interface_id)
         headers = json.loads(interface.headers)  # 请求头
-        asserts = json.loads(interface.asserts)  # 断言集
         # 根据请求方式动态选择requests的请求方法
         requests_fun = getattr(self.session, interface.get_request_mode_display().lower())
+        ApiTestPlanModel.objects.filter(plan_id=self.test_plan_id).update(state=ApiTestPlanState.RUNNING)
         if json.loads(interface.formData):  # form-data文件请求
             data = json.loads(interface.formData)
             response = requests_fun(url=interface.addr, headers=headers, data=data)
             self.dispose_response(interface=interface, response=response)
         elif json.loads(interface.urlencoded):  # form 表单
-            data = json.loads(interface.formData)
+            data = json.loads(interface.urlencoded)
             response = requests_fun(url=interface.addr, headers=headers, data=data)
             self.dispose_response(interface=interface, response=response)
         elif json.loads(interface.raw):  # json请求
@@ -47,9 +47,8 @@ class ApiRunner:
             response = requests_fun(url=interface.addr, headers=headers)
             self.dispose_response(interface=interface, response=response)
 
-    # @property
     def distributor(self):
-        # TODO
+        # 分配器
         interfaceJobs = InterfaceJobModel.objects.filter(test_plan_id=self.test_plan_id)
         for interfaceJob in interfaceJobs:
             self.processing_plant(interfaceJob)

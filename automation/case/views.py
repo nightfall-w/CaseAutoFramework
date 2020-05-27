@@ -6,7 +6,7 @@ import coreapi
 import coreschema
 import git
 from django.conf import settings
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from rest_framework import permissions, pagination, viewsets, status
 from rest_framework.response import Response
 from rest_framework.schemas import AutoSchema
@@ -129,7 +129,7 @@ class CaseTree(APIView):
                 with open(os.path.join(settings.BASE_DIR, 'case_house', case_branch, case_path), 'r',
                           encoding='utf-8') as f:
                     case_data = f.read()
-                    return JsonResponse({"case_name": case_name, "case_data": case_data})
+                    return HttpResponse(case_data, content_type='text/plain')
             except FileNotFoundError as es:
                 logger.error(es)
                 return JsonResponse({"error": "case:{}不存在".format(case_name)})

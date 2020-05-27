@@ -3,6 +3,7 @@ import uuid
 
 import coreapi
 import coreschema
+from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import permissions
@@ -58,4 +59,12 @@ class ApiTestPlanView(APIView):
                 InterfaceJobModel.objects.create(interface_id=interfaceId, test_plan_id=plan_id,
                                                  state=ApiJobState.WAITING)
             ApiRunner(test_plan_id=plan_id).distributor()
-            return Response({"success": True})
+            return Response({"trigger_success": True})
+
+
+@method_decorator(csrf_exempt, name='get')
+class test_return_file(APIView):
+    def get(self, request):
+        with open('case_house/feature/wcs_dingTalk/dingTalk.py', 'r', encoding='utf-8') as f:
+            data = f.read()
+            return HttpResponse(data, content_type='text/plain')
