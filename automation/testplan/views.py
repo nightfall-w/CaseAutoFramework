@@ -21,6 +21,8 @@ from .runner import ApiRunner
 @method_decorator(csrf_exempt, name='post')
 class ApiTestPlanView(APIView):
     Schema = AutoSchema(manual_fields=[
+        coreapi.Field(name="projectId", required=True, location="form",
+                      schema=coreschema.String(description='项目id')),
         coreapi.Field(name="interfaceIds", required=True, location="form",
                       schema=coreschema.String(description='接口id集合')),
         coreapi.Field(name="name", required=True, location="form", schema=coreschema.String(description='计划名'))
@@ -33,11 +35,14 @@ class ApiTestPlanView(APIView):
         【创建Api测试计划】
         """
         try:
+            projectId = json.loads(request.data.get('projectId', None))
             interfaceIds = json.loads(request.data.get('interfaceIds', "[]"))
             test_plan_name = request.data.get("name", None)
         except Exception as es:
             logger.error(es)
             return Response({"error": "不符合格式的接口列表"})
+        if not projectId:
+            return Response({"error": "项目Id不能为空"})
         if not test_plan_name:
             return Response({"error": "测试计划名不能为空"})
         if not interfaceIds:
@@ -51,7 +56,8 @@ class ApiTestPlanView(APIView):
             # 创建接口测试计划
             plan_id = uuid.uuid4()
             api_testplan_obj = ApiTestPlanModel.objects.create(name=test_plan_name, plan_id=plan_id,
-                                                               state=ApiTestPlanState.WAITING,
+                                                               project=int(projectId),
+                                                               state=ApiTestPlanState.WAITING, create_user=request.user,
                                                                result="0/{}".format(len(interfaceIds)))
             if not api_testplan_obj:
                 return Response({"error": "创建api测试计划失败"})

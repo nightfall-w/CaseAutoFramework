@@ -17,12 +17,18 @@ class InterfaceViewSet(viewsets.ModelViewSet):
         return InterfaceModel.objects.all()
 
     def list(self, request, *args, **kwargs):
+        """
+        【获取接口列表】
+        """
         interfaces = self.get_queryset()
         page = self.paginate_queryset(interfaces)
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)
 
     def create(self, request, *args, **kwargs):
+        """
+        【创建接口】
+        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()

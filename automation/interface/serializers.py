@@ -1,9 +1,10 @@
 import json
 
+from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from interface.models import InterfaceModel, InterfaceJobModel
-from rest_framework import serializers
+from Logger import logger
+from interface.models import InterfaceModel
 
 
 class InterfaceSerializer(serializers.ModelSerializer):
@@ -14,7 +15,7 @@ class InterfaceSerializer(serializers.ModelSerializer):
         validators = [
             UniqueTogetherValidator(
                 queryset=InterfaceModel.objects.all(),
-                fields=('name', 'addr'),
+                fields=('project', 'name', 'addr'),
                 message="已经存在相同名称和url的接口"
             )
         ]
@@ -25,5 +26,6 @@ class InterfaceSerializer(serializers.ModelSerializer):
                 try:
                     json.loads(attrs[item])
                 except Exception as es:
+                    logger.error(es)
                     raise serializers.ValidationError('字段{}不是json格式'.format(item))
         return attrs
