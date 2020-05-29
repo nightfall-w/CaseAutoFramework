@@ -7,7 +7,6 @@ from .models import InterfaceModel
 from .serializers import InterfaceSerializer
 
 
-
 class InterfaceViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = InterfaceSerializer
@@ -33,4 +32,3 @@ class InterfaceViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
-

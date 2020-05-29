@@ -1,19 +1,72 @@
 # -*- coding=utf-8 -*-
 import json
+import re
 
 import requests
+
 from Logger import logger
 from interface.models import InterfaceJobModel, InterfaceModel
 from testplan.models import ApiTestPlanModel
 from utils.job_status_enum import ApiJobState, ApiTestPlanState
 
 
+def isRegular(expression):
+    """
+    判断是否为正则表达式
+    """
+    if not isinstance(expression, str):
+        return False
+    try:
+        term = re.compile(expression)
+    except Exception as es:
+        logger.error(es)
+        return False
+    else:
+        return term
+
+
+def assert_regular(pattern, str_obj):
+    result = pattern.search(str_obj)
+    if not result:
+        return False
+    try:
+        result.group(1)
+    except IndexError as es:
+        logger.warning(es)
+        return result.group(0)
+
+
+def assert_delimiter(key_str, response_json):
+    """
+    分隔符处理
+    """
+    # TODO
+    hierarchy = key_str.split('.')
+    try:
+        response = json.loads(response_json)
+        result = response
+        for tier in hierarchy:
+            result = result.get(tier, dict())
+            print(result)
+        return result
+    except Exception as es:
+        logger.warning(es)
+        return None
+
+
 class ApiRunner:
+    """
+    Api case测执行调度器
+    """
+
     def __init__(self, test_plan_id):
         self.test_plan_id = test_plan_id
         self.session = requests.session()
 
     def dispose_response(self, interface, response):
+        """
+        请求处理器
+        """
         for key, value in json.loads(interface.asserts).items():
             if key == "status_code":
                 if response.status_code != value:
@@ -31,6 +84,9 @@ class ApiRunner:
                                                                                state=ApiJobState.SUCCESS)
 
     def processing_plant(self, interface):
+        """
+        测试计划处理
+        """
         # 获取interface对象
         interface = InterfaceModel.objects.get(id=interface.interface_id)
         headers = json.loads(interface.headers)  # 请求头
