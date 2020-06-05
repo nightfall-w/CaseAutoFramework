@@ -1,8 +1,10 @@
 from django.db import models
-from project.models import ProjectModel
 
 
 class ApiTestPlanModel(models.Model):
+    """
+    接口测试计划模型
+    """
     name = models.CharField(verbose_name="计划名称", max_length=30, null=False, help_text="测试计划名")
     plan_id = models.CharField(verbose_name="计划id", max_length=50, null=False, help_text="计划编号")
     project = models.IntegerField(verbose_name="接口名称", null=False, help_text="项目id")

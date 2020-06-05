@@ -1,9 +1,8 @@
 # -*- coding=utf-8 -*-
 import json
 import re
-
+from testplan import operation
 import requests
-
 from Logger import logger
 from interface.models import InterfaceJobModel, InterfaceModel
 from testplan.models import ApiTestPlanModel
@@ -27,7 +26,7 @@ def isRegular(expression):
 
 def assert_regular(pattern, str_obj):
     result = pattern.search(str_obj)
-    if not result:
+    if result is None:
         return False
     try:
         result.group(1)
@@ -41,17 +40,33 @@ def assert_delimiter(key_str, response_json):
     分隔符处理
     """
     # TODO
-    hierarchy = key_str.split('.')
+    hierarchy = key_str.split('.')[1:]
     try:
         response = json.loads(response_json)
         result = response
         for tier in hierarchy:
             result = result.get(tier, dict())
-            print(result)
         return result
     except Exception as es:
-        logger.warning(es)
-        return None
+        return "EXCEPTION"
+
+
+def update_api_job_fail(test_plan_id, interface_id, response_text):
+    """
+    更新interfaceJob状态为FAIL
+    """
+    InterfaceJobModel.objects.filter(test_plan_id=test_plan_id,
+                                     interface_id=interface_id).update(result=response_text,
+                                                                       state=ApiJobState.FAILED)
+
+
+def update_api_job_success(test_plan_id, interface_id, response_text):
+    """
+    更新interfaceJob状态为FAIL
+    """
+    InterfaceJobModel.objects.filter(test_plan_id=test_plan_id,
+                                     interface_id=interface_id).update(result=response_text,
+                                                                       state=ApiJobState.SUCCESS)
 
 
 class ApiRunner:
@@ -67,21 +82,44 @@ class ApiRunner:
         """
         请求处理器
         """
-        for key, value in json.loads(interface.asserts).items():
-            if key == "status_code":
-                if response.status_code != value:
-                    InterfaceJobModel.objects.filter(test_plan_id=self.test_plan_id,
-                                                     interface_id=interface.id).update(result=response.text,
-                                                                                       state=ApiJobState.FAILED)
-            elif json.loads(response.text).get(key, None) != value:
-                InterfaceJobModel.objects.filter(test_plan_id=self.test_plan_id,
-                                                 interface_id=interface.id).update(result=response.text,
-                                                                                   state=ApiJobState.FAILED)
-                return False
-        else:
-            InterfaceJobModel.objects.filter(test_plan_id=self.test_plan_id,
-                                             interface_id=interface.id).update(result=response.text,
-                                                                               state=ApiJobState.SUCCESS)
+        for _assert in json.loads(interface.asserts):
+            if _assert['assertType'] == "regular":
+                # 正则判断逻辑
+                if not isRegular(_assert['rule']):
+                    logger.debug(
+                        'interface Id：{}, testPlan Id expression {} is not regular'.format(interface.id,
+                                                                                           self.test_plan_id,
+                                                                                           _assert['expression']))
+                    update_api_job_fail(self.test_plan_id, interface.id, response.text)
+                    break
+                else:
+                    pattern = isRegular(_assert['expression'])
+                    re_result = assert_regular(pattern, response.text)
+                    if not re_result:  # 断言失败
+                        update_api_job_fail(self.test_plan_id, interface.id, response.text)  # 跟新interfaceJob状态失败
+                        break
+                    else:
+                        if re_result != _assert['expect']:
+                            update_api_job_fail(self.test_plan_id, interface.id, response.text)  # 跟新interfaceJob状态失败
+                            break
+            elif _assert['assertType'] == "delimiter":
+                # 分隔符取值
+                delimiter_result = assert_delimiter(_assert['expression'], response.text)
+                if not delimiter_result == 'EXCEPTION':
+                    logger.error("delimiter error：{}, interfaceJobId: {}, test_plan Id:{}".format(_assert['expression'],
+                                                                                                  interface.id,
+                                                                                                  self.test_plan_id))
+                    update_api_job_fail(self.test_plan_id, interface.id, response.text)
+                    break
+                elif not delimiter_result:
+                    update_api_job_fail(self.test_plan_id, interface.id, response.text)
+                    break
+                else:
+                    if not delimiter_result != _assert['expect']:
+                        update_api_job_fail(self.test_plan_id, interface.id, response.text)
+                        break
+        else:  # 所有断言验证通过
+            update_api_job_success(self.test_plan_id, interface.id, response.text)
 
     def processing_plant(self, interface):
         """
