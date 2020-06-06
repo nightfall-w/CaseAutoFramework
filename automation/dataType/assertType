@@ -1,0 +1,69 @@
+        assertTypeList: [
+        {
+          name: "等于",
+          value: "equals"
+        },
+        {
+          name: "小于",
+          value: "less_than"
+        },
+        {
+          name: "小于等于",
+          value: "less_than_or_equals"
+        },
+        {
+          name: "大于",
+          value: "greater_than"
+        },
+        {
+          name: "大于等于",
+          value: "greater_than_or_equals"
+        },
+        {
+          name: "不等于",
+          value: "not_equals"
+        },
+        {
+          name: "字符串等于",
+          value: "string_equals"
+        },
+        {
+          name: "长度等于",
+          value: "length_equals"
+        },
+        {
+          name: "长度不等于",
+          value: "length_not_equals"
+        },
+        {
+          name: "长度大于",
+          value: "length_greater_than"
+        },
+        {
+          name: "长度大于等于",
+          value: "length_greater_than_or_equals"
+        },
+        {
+          name: "长度小于",
+          value: "length_less_than"
+        },
+        {
+          name: "长度小于等于",
+          value: "length_less_than_or_equals"
+        },
+        {
+          name: "包含",
+          value: "contain"
+        },
+        {
+          name: "不包含",
+          value: "not_contain"
+        },
+        {
+          name: "状态码等于",
+          value: "state_code_contain"
+        },
+        {
+          name: "状态码不等于",
+          value: "state_code_not_contain"
+        }]

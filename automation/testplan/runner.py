@@ -1,12 +1,14 @@
 # -*- coding=utf-8 -*-
 import json
 import re
-from testplan import operation
+
 import requests
+
 from Logger import logger
 from interface.models import InterfaceJobModel, InterfaceModel
 from testplan.models import ApiTestPlanModel
 from utils.job_status_enum import ApiJobState, ApiTestPlanState
+from testplan import operation
 
 
 def isRegular(expression):
@@ -39,7 +41,6 @@ def assert_delimiter(key_str, response_json):
     """
     分隔符处理
     """
-    # TODO
     hierarchy = key_str.split('.')[1:]
     try:
         response = json.loads(response_json)
@@ -99,7 +100,13 @@ class ApiRunner:
                         update_api_job_fail(self.test_plan_id, interface.id, response.text)  # 跟新interfaceJob状态失败
                         break
                     else:
-                        if re_result != _assert['expect']:
+                        try:
+                            calculate_fun = getattr(operation, _assert['calculate'])
+                        except AttributeError as es:
+                            logger.error("calculate rule {} is not exist！".format(_assert['calculate']))
+                            update_api_job_fail(self.test_plan_id, interface.id, response.text)
+                            break
+                        if not calculate_fun(re_result, _assert['expect']):
                             update_api_job_fail(self.test_plan_id, interface.id, response.text)  # 跟新interfaceJob状态失败
                             break
             elif _assert['assertType'] == "delimiter":
@@ -115,7 +122,13 @@ class ApiRunner:
                     update_api_job_fail(self.test_plan_id, interface.id, response.text)
                     break
                 else:
-                    if not delimiter_result != _assert['expect']:
+                    try:
+                        calculate_fun = getattr(operation, _assert['calculate'])
+                    except AttributeError as es:
+                        logger.error("calculate rule {} is not exist！".format(_assert['calculate']))
+                        update_api_job_fail(self.test_plan_id, interface.id, response.text)
+                        break
+                    if not calculate_fun(delimiter_result, _assert['expect']):
                         update_api_job_fail(self.test_plan_id, interface.id, response.text)
                         break
         else:  # 所有断言验证通过
