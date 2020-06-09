@@ -37,14 +37,17 @@ def assert_regular(pattern, str_obj):
         return result.group(0)
 
 
-def assert_delimiter(key_str, response_json):
+def assert_delimiter(key_str, response):
     """
     分隔符处理
     """
     hierarchy = key_str.split('.')[1:]
     try:
-        response = json.loads(response_json)
-        result = response
+        if hierarchy[0] == 'status_code':
+            result = response.status_code
+            return result
+        response_json = json.loads(response.text)
+        result = response_json
         for tier in hierarchy:
             result = result.get(tier, dict())
         return result
@@ -111,14 +114,14 @@ class ApiRunner:
                             break
             elif _assert['assertType'] == "delimiter":
                 # 分隔符取值
-                delimiter_result = assert_delimiter(_assert['expression'], response.text)
-                if not delimiter_result == 'EXCEPTION':
+                delimiter_result = assert_delimiter(_assert['expression'], response)
+                if delimiter_result == 'EXCEPTION':
                     logger.error("delimiter error：{}, interfaceJobId: {}, test_plan Id:{}".format(_assert['expression'],
                                                                                                   interface.id,
                                                                                                   self.test_plan_id))
                     update_api_job_fail(self.test_plan_id, interface.id, response.text)
                     break
-                elif not delimiter_result:
+                elif delimiter_result == dict():
                     update_api_job_fail(self.test_plan_id, interface.id, response.text)
                     break
                 else:

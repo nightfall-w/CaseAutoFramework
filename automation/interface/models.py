@@ -7,7 +7,7 @@ class InterfaceModel(models.Model):
     MODE_LIST = [
         ('1', 'GET'), ('2', 'POST'), ('3', 'PUT'), ('4', 'DELETE'), ('5', 'PATCH')
     ]
-    project = models.IntegerField(verbose_name="接口名称", null=False, help_text="项目id")
+    project = models.IntegerField(verbose_name="项目id", null=False, help_text="项目id")
     name = models.CharField(verbose_name="接口名称", max_length=50, null=False, help_text="接口名称")
     desc = models.TextField(verbose_name="接口描述", default='', help_text="接口描述")
     addr = models.CharField(verbose_name="接口地址", null=False, max_length=1000, help_text="接口地址")
