@@ -22,7 +22,7 @@ class InterfaceSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         for item in attrs:
-            if item in ['headers', 'formData', 'urlencoded', 'raw', 'asserts']:
+            if item in ['headers', 'formData', 'urlencoded', 'raw', 'asserts', 'parameters']:
                 try:
                     json.loads(attrs[item])
                 except Exception as es:

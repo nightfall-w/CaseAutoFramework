@@ -21,6 +21,7 @@ class InterfaceModel(models.Model):
     raw = JSONField(verbose_name="requestBody", null=False, default='{}',
                     help_text="可以上传任意格式的文本，可以上传text、json、xml、html等")
     asserts = JSONField(verbose_name="断言", null=False, default='{}', help_text="断言")
+    parameters = JSONField(verbose_name="参数集", null=False, default='{}', help_text="参数集")
     extract = JSONField(verbose_name="出参", null=False, default='{}', help_text="出参")
 
     class Meta:
