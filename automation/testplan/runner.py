@@ -9,6 +9,7 @@ from interface.models import InterfaceJobModel, InterfaceModel, InterfaceCacheMo
 from testplan import operation
 from testplan.models import ApiTestPlanModel
 from utils.job_status_enum import ApiJobState, ApiTestPlanState
+from standard.enum import InterFaceType
 
 
 class cartesian(object):
@@ -33,7 +34,8 @@ def data_drive(interfaceIds, plan_id):
     for interfaceId in interfaceIds:
         interface = InterfaceModel.objects.get(id=interfaceId)
         if not interface.parameters:  # api没有测试数据集  直接创建api job
-            InterfaceJobModel.objects.create(interface_id=interfaceId, test_plan_id=plan_id,
+            InterfaceJobModel.objects.create(interfaceType=InterFaceType.INSTANCE.value, interface_id=interfaceId,
+                                             test_plan_id=plan_id,
                                              state=ApiJobState.WAITING)
         else:  # api有测试数据集， 解析测试数据
             key_list = []
@@ -77,7 +79,10 @@ def data_drive(interfaceIds, plan_id):
                         if '$%s' % key in interfaceCache.extract:
                             interfaceCache.extract.replace('$%s' % key, item[keys_index][key_index], 10)
                         interfaceCache.save()
-                InterfaceJobModel.objects.create()
+                InterfaceJobModel.objects.create(interfaceType=InterFaceType.CACHE.value,
+                                                 interface_id=interfaceCache.id,
+                                                 test_plan_id=plan_id,
+                                                 state=ApiJobState.WAITING)
 
 
 def isRegular(expression):
@@ -206,12 +211,15 @@ class ApiRunner:
         else:  # 所有断言验证通过
             update_api_job_success(self.test_plan_id, interface.id, response.text)
 
-    def processing_plant(self, interface):
+    def processing_plant(self, interface_job):
         """
         测试计划处理
         """
         # 获取interface对象
-        interface = InterfaceModel.objects.get(id=interface.interface_id)
+        if interface_job.interfaceType == InterFaceType.INSTANCE.value:
+            interface = InterfaceModel.objects.get(id=interface_job.interface_id)
+        else:
+            interface = InterfaceCacheModel.objects.get(id=interface_job.interface_id)
         headers = json.loads(interface.headers)  # 请求头
         # 根据请求方式动态选择requests的请求方法
         logger.debug(id(self.session))

@@ -15,7 +15,7 @@ class CaseStatus(Enum):
     DONE = "DONE"
     FAILED = "FAILED"
 
-
+@unique
 class InterFaceType(Enum):
     INSTANCE = "INSTANCE"
     CACHE = "CACHE"

@@ -15,7 +15,7 @@ from Logger import logger
 from interface.models import InterfaceModel, InterfaceJobModel
 from testplan.models import ApiTestPlanModel
 from utils.job_status_enum import ApiTestPlanState, ApiJobState
-from .runner import ApiRunner
+from .runner import ApiRunner, data_drive
 
 
 @method_decorator(csrf_exempt, name='post')
@@ -61,9 +61,7 @@ class ApiTestPlanView(APIView):
                                                                result="0/{}".format(len(interfaceIds)))
             if not api_testplan_obj:
                 return Response({"error": "创建api测试计划失败"})
-            for interfaceId in interfaceIds:
-                InterfaceJobModel.objects.create(interface_id=interfaceId, test_plan_id=plan_id,
-                                                 state=ApiJobState.WAITING)
+            data_drive(interfaceIds, plan_id)
             ApiRunner(test_plan_id=plan_id).distributor()
             return Response({"trigger_success": True})
 
