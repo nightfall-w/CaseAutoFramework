@@ -59,24 +59,25 @@ def data_drive(interfaceIds, plan_id):
                 for keys_index, keys in enumerate(key_list):
                     for key_index, key in enumerate(keys.split('-')):
                         if '$%s' % key in interfaceCache.addr:
-                            interfaceCache.addr.replace('$%s' % key, item[keys_index][key_index])
+                            interfaceCache.addr.replace('$%s' % key, item[keys_index][key_index], 10)
                         if '$%s' % key in interfaceCache.name:
-                            interfaceCache.name.replace('$%s' % key, item[keys_index][key_index])
+                            interfaceCache.name.replace('$%s' % key, item[keys_index][key_index], 10)
                         if '$%s' % key in interfaceCache.desc:
-                            interfaceCache.desc.replace('$%s' % key, item[keys_index][key_index])
+                            interfaceCache.desc.replace('$%s' % key, item[keys_index][key_index], 10)
                         if '$%s' % key in interfaceCache.headers:
-                            interfaceCache.headers.replace('$%s' % key, item[keys_index][key_index])
+                            interfaceCache.headers.replace('$%s' % key, item[keys_index][key_index], 10)
                         if '$%s' % key in interfaceCache.formData:
-                            interfaceCache.formData.replace('$%s' % key, item[keys_index][key_index])
+                            interfaceCache.formData.replace('$%s' % key, item[keys_index][key_index], 10)
                         if '$%s' % key in interfaceCache.urlencoded:
-                            interfaceCache.urlencoded.replace('$%s' % key, item[keys_index][key_index])
+                            interfaceCache.urlencoded.replace('$%s' % key, item[keys_index][key_index], 10)
                         if '$%s' % key in interfaceCache.raw:
-                            interfaceCache.raw.replace('$%s' % key, item[keys_index][key_index])
+                            interfaceCache.raw.replace('$%s' % key, item[keys_index][key_index], 10)
                         if '$%s' % key in interfaceCache.asserts:
-                            interfaceCache.asserts.replace('$%s' % key, item[keys_index][key_index])
+                            interfaceCache.asserts.replace('$%s' % key, item[keys_index][key_index], 10)
                         if '$%s' % key in interfaceCache.extract:
-                            interfaceCache.extract.replace('$%s' % key, item[keys_index][key_index])
+                            interfaceCache.extract.replace('$%s' % key, item[keys_index][key_index], 10)
                         interfaceCache.save()
+                InterfaceJobModel.objects.create()
 
 
 def isRegular(expression):

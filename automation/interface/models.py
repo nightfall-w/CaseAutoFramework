@@ -60,6 +60,7 @@ class InterfaceCacheModel(models.Model):
 
 
 class InterfaceJobModel(models.Model):
+    interfaceType = models.CharField(verbose_name="接口类型", null=False, help_text="接口类型")
     interface_id = models.IntegerField(verbose_name="接口id", null=False, help_text="接口id")
     test_plan_id = models.CharField(verbose_name="测试计划id", max_length=50, null=False, help_text="测试计划id")
     state = models.CharField(verbose_name="接口测试状态", null=False, max_length=10, help_text="接口测试状态")

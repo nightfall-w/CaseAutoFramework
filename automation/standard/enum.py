@@ -14,3 +14,8 @@ class CaseStatus(Enum):
     PULLING = "PULLING"
     DONE = "DONE"
     FAILED = "FAILED"
+
+
+class InterFaceType(Enum):
+    INSTANCE = "INSTANCE"
+    CACHE = "CACHE"
