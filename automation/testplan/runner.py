@@ -1,14 +1,82 @@
 # -*- coding=utf-8 -*-
+import itertools
 import json
 import re
 
 import requests
-
 from Logger import logger
-from interface.models import InterfaceJobModel, InterfaceModel
+from interface.models import InterfaceJobModel, InterfaceModel, InterfaceCacheModel
+from testplan import operation
 from testplan.models import ApiTestPlanModel
 from utils.job_status_enum import ApiJobState, ApiTestPlanState
-from testplan import operation
+
+
+class cartesian(object):
+    """
+    【api测试数据的笛卡儿积计算器】
+    """
+
+    def __init__(self):
+        self._data_list = list()
+
+    def add_data(self, data=list()):  # 添加生成笛卡尔积的数据列表
+        self._data_list.append(data)
+
+    def build(self):  # 计算笛卡尔积
+        items = []
+        for item in itertools.product(*self._data_list):
+            items.append(item)
+        return items
+
+
+def data_drive(interfaceIds, plan_id):
+    for interfaceId in interfaceIds:
+        interface = InterfaceModel.objects.get(id=interfaceId)
+        if not interface.parameters:  # api没有测试数据集  直接创建api job
+            InterfaceJobModel.objects.create(interface_id=interfaceId, test_plan_id=plan_id,
+                                             state=ApiJobState.WAITING)
+        else:  # api有测试数据集， 解析测试数据
+            key_list = []
+            car = cartesian()
+            parameters = json.loads(interface.parameters)
+            for k, v in parameters.items():
+                key_list.append(k)
+                if not isinstance(v, list):
+                    v = [v]
+                car.add_data(v)
+            items = car.build()
+            for item in items:
+                interfaceCache = InterfaceCacheModel.objects.update_or_create(project=interface.project,
+                                                                              name=interface.name, desc=interface.desc,
+                                                                              addr=interface.addr,
+                                                                              request_mode=interface.request_mode,
+                                                                              headers=interface.headers,
+                                                                              formData=interface.formData,
+                                                                              urlencoded=interface.urlencoded,
+                                                                              raw=interface.raw,
+                                                                              asserts=interface.asserts,
+                                                                              extract=interface.extract)
+                for keys_index, keys in enumerate(key_list):
+                    for key_index, key in enumerate(keys.split('-')):
+                        if '$%s' % key in interfaceCache.addr:
+                            interfaceCache.addr.replace('$%s' % key, item[keys_index][key_index])
+                        if '$%s' % key in interfaceCache.name:
+                            interfaceCache.name.replace('$%s' % key, item[keys_index][key_index])
+                        if '$%s' % key in interfaceCache.desc:
+                            interfaceCache.desc.replace('$%s' % key, item[keys_index][key_index])
+                        if '$%s' % key in interfaceCache.headers:
+                            interfaceCache.headers.replace('$%s' % key, item[keys_index][key_index])
+                        if '$%s' % key in interfaceCache.formData:
+                            interfaceCache.formData.replace('$%s' % key, item[keys_index][key_index])
+                        if '$%s' % key in interfaceCache.urlencoded:
+                            interfaceCache.urlencoded.replace('$%s' % key, item[keys_index][key_index])
+                        if '$%s' % key in interfaceCache.raw:
+                            interfaceCache.raw.replace('$%s' % key, item[keys_index][key_index])
+                        if '$%s' % key in interfaceCache.asserts:
+                            interfaceCache.asserts.replace('$%s' % key, item[keys_index][key_index])
+                        if '$%s' % key in interfaceCache.extract:
+                            interfaceCache.extract.replace('$%s' % key, item[keys_index][key_index])
+                        interfaceCache.save()
 
 
 def isRegular(expression):

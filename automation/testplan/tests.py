@@ -20,7 +20,27 @@
 #
 #
 # assert_delimiter("a.b.c", '{"a":1,"b":"4"}')
-from testplan import operation
+# from testplan import operation
+#
+# result = getattr(operation, 'dd')
+# print(result)
+import itertools
 
-result = getattr(operation, 'dd')
-print(result)
+
+class cartesian(object):
+    def __init__(self):
+        self._data_list = list()
+
+    def add_data(self, data=list()):  # 添加生成笛卡尔积的数据列表
+        self._data_list.append(data)
+
+    def build(self):  # 计算笛卡尔积
+        for item in itertools.product(*self._data_list):
+            print(item)
+
+
+car = cartesian()
+car.add_data([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+car.add_data([[10, 11, 12], [13, 14, 15], [16, 17, 18]])
+car.add_data([66, 88, 99])
+car.build()

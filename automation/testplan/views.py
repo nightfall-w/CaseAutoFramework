@@ -25,7 +25,7 @@ class ApiTestPlanView(APIView):
                       schema=coreschema.String(description='项目id')),
         coreapi.Field(name="interfaceIds", required=True, location="form",
                       schema=coreschema.String(description='接口id集合')),
-        coreapi.Field(name="name", required=True, location="form", schema=coreschema.String(description='计划名'))
+        coreapi.Field(name="testPlanName", required=True, location="form", schema=coreschema.String(description='计划名'))
     ])
     schema = Schema
     permission_classes = (permissions.IsAuthenticated,)
@@ -37,7 +37,7 @@ class ApiTestPlanView(APIView):
         try:
             projectId = json.loads(request.data.get('projectId', None))
             interfaceIds = json.loads(request.data.get('interfaceIds', "[]"))
-            test_plan_name = request.data.get("name", None)
+            test_plan_name = request.data.get("testPlanName", None)
         except Exception as es:
             logger.error(es)
             return Response({"error": "不符合格式的接口列表"})
