@@ -12,9 +12,9 @@ from rest_framework.schemas import AutoSchema
 from rest_framework.views import APIView
 
 from Logger import logger
-from interface.models import InterfaceModel, InterfaceJobModel
+from interface.models import InterfaceModel
 from testplan.models import ApiTestPlanModel
-from utils.job_status_enum import ApiTestPlanState, ApiJobState
+from utils.job_status_enum import ApiTestPlanState
 from .runner import ApiRunner, data_drive
 
 

@@ -146,7 +146,18 @@ def assert_delimiter(key_str, response):
         response_json = json.loads(response.text)
         result = response_json
         for tier in hierarchy:
-            result = result.get(tier, dict())
+            try:
+                tier = int(tier)
+            except ValueError:
+                tier = tier
+            if isinstance(tier, int):
+                try:
+                    result = result[tier]
+                except IndexError as es:
+                    logger.error(es)
+                    return "EXCEPTION"
+            else:
+                result = result.get(tier, dict())
         return result
     except Exception as es:
         return "EXCEPTION"
