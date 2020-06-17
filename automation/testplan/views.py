@@ -58,7 +58,7 @@ class ApiTestPlanView(APIView):
             api_testplan_obj = ApiTestPlanModel.objects.create(name=test_plan_name, plan_id=plan_id,
                                                                project=int(projectId),
                                                                state=ApiTestPlanState.WAITING, create_user=request.user,
-                                                               result="0/{}".format(len(interfaceIds)))
+                                                               result="0/0")
             if not api_testplan_obj:
                 return Response({"error": "创建api测试计划失败"})
             data_drive(interfaceIds, plan_id)

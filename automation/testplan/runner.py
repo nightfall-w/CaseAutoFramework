@@ -37,6 +37,10 @@ def data_drive(interfaceIds, plan_id):
             InterfaceJobModel.objects.create(interfaceType=InterFaceType.INSTANCE.value, interface_id=interfaceId,
                                              test_plan_id=plan_id,
                                              state=ApiJobState.WAITING)
+            api_testplan_obj = ApiTestPlanModel.objects.get(plan_id=plan_id)
+            current_job_num = api_testplan_obj.result.split('/')[1]
+            api_testplan_obj.result = "0/{}".format(1 + int(current_job_num))
+            api_testplan_obj.save()
         else:  # api有测试数据集， 解析测试数据
             key_list = []
             car = cartesian()
@@ -44,40 +48,59 @@ def data_drive(interfaceIds, plan_id):
             for k, v in parameters.items():
                 key_list.append(k)
                 if not isinstance(v, list):
-                    v = [v]
+                    v = [v, ]
                 car.add_data(v)
             items = car.build()
+            api_testplan_obj = ApiTestPlanModel.objects.get(plan_id=plan_id)
+            current_job_num = api_testplan_obj.result.split('/')[1]
+            api_testplan_obj.result = "0/{}".format(len(items) + int(current_job_num))
+            api_testplan_obj.save()
             for item in items:
-                interfaceCache = InterfaceCacheModel.objects.update_or_create(project=interface.project,
-                                                                              name=interface.name, desc=interface.desc,
-                                                                              addr=interface.addr,
-                                                                              request_mode=interface.request_mode,
-                                                                              headers=interface.headers,
-                                                                              formData=interface.formData,
-                                                                              urlencoded=interface.urlencoded,
-                                                                              raw=interface.raw,
-                                                                              asserts=interface.asserts,
-                                                                              extract=interface.extract)
+                interfaceCache = InterfaceCacheModel.objects.create(project=interface.project,
+                                                                    name=interface.name, desc=interface.desc,
+                                                                    addr=interface.addr,
+                                                                    request_mode=interface.request_mode,
+                                                                    headers=interface.headers,
+                                                                    formData=interface.formData,
+                                                                    urlencoded=interface.urlencoded,
+                                                                    raw=interface.raw,
+                                                                    asserts=interface.asserts,
+                                                                    extract=interface.extract)
                 for keys_index, keys in enumerate(key_list):
-                    for key_index, key in enumerate(keys.split('-')):
+                    keys_break_down = keys.split('-')
+                    for key_index, key in enumerate(keys_break_down):
+                        if len(keys_break_down) == 1:
+                            item = list(item)
+                            item[keys_index] = [item[keys_index], ]
+                            item = tuple(item)
                         if '$%s' % key in interfaceCache.addr:
-                            interfaceCache.addr.replace('$%s' % key, item[keys_index][key_index], 10)
+                            interfaceCache.addr = interfaceCache.addr.replace('$%s' % key, item[keys_index][key_index],
+                                                                              10)
                         if '$%s' % key in interfaceCache.name:
-                            interfaceCache.name.replace('$%s' % key, item[keys_index][key_index], 10)
+                            interfaceCache.name = interfaceCache.name.replace('$%s' % key, item[keys_index][key_index],
+                                                                              10)
                         if '$%s' % key in interfaceCache.desc:
-                            interfaceCache.desc.replace('$%s' % key, item[keys_index][key_index], 10)
+                            interfaceCache.desc = interfaceCache.desc.replace('$%s' % key, item[keys_index][key_index],
+                                                                              10)
                         if '$%s' % key in interfaceCache.headers:
-                            interfaceCache.headers.replace('$%s' % key, item[keys_index][key_index], 10)
+                            interfaceCache.headers = interfaceCache.headers.replace('$%s' % key,
+                                                                                    item[keys_index][key_index], 10)
                         if '$%s' % key in interfaceCache.formData:
-                            interfaceCache.formData.replace('$%s' % key, item[keys_index][key_index], 10)
+                            interfaceCache.formData = interfaceCache.formData.replace('$%s' % key,
+                                                                                      item[keys_index][key_index], 10)
                         if '$%s' % key in interfaceCache.urlencoded:
-                            interfaceCache.urlencoded.replace('$%s' % key, item[keys_index][key_index], 10)
+                            interfaceCache.urlencoded = interfaceCache.urlencoded.replace('$%s' % key,
+                                                                                          item[keys_index][key_index],
+                                                                                          10)
                         if '$%s' % key in interfaceCache.raw:
-                            interfaceCache.raw.replace('$%s' % key, item[keys_index][key_index], 10)
+                            interfaceCache.raw = interfaceCache.raw.replace('$%s' % key, item[keys_index][key_index],
+                                                                            10)
                         if '$%s' % key in interfaceCache.asserts:
-                            interfaceCache.asserts.replace('$%s' % key, item[keys_index][key_index], 10)
+                            interfaceCache.asserts = interfaceCache.asserts.replace('$%s' % key,
+                                                                                    item[keys_index][key_index], 10)
                         if '$%s' % key in interfaceCache.extract:
-                            interfaceCache.extract.replace('$%s' % key, item[keys_index][key_index], 10)
+                            interfaceCache.extract = interfaceCache.extract.replace('$%s' % key,
+                                                                                    item[keys_index][key_index], 10)
                         interfaceCache.save()
                 InterfaceJobModel.objects.create(interfaceType=InterFaceType.CACHE.value,
                                                  interface_id=interfaceCache.id,
@@ -129,22 +152,26 @@ def assert_delimiter(key_str, response):
         return "EXCEPTION"
 
 
-def update_api_job_fail(test_plan_id, interface_id, response_text):
+def update_api_job_fail(test_plan_id, interface_id, response):
     """
     更新interfaceJob状态为FAIL
     """
     InterfaceJobModel.objects.filter(test_plan_id=test_plan_id,
-                                     interface_id=interface_id).update(result=response_text,
-                                                                       state=ApiJobState.FAILED)
+                                     interface_id=interface_id).update(result=response.text,
+                                                                       state=ApiJobState.FAILED,
+                                                                       status_code=response.status_code,
+                                                                       elapsed=response.elapsed.total_seconds())
 
 
-def update_api_job_success(test_plan_id, interface_id, response_text):
+def update_api_job_success(test_plan_id, interface_id, response):
     """
     更新interfaceJob状态为FAIL
     """
     InterfaceJobModel.objects.filter(test_plan_id=test_plan_id,
-                                     interface_id=interface_id).update(result=response_text,
-                                                                       state=ApiJobState.SUCCESS)
+                                     interface_id=interface_id).update(result=response.text,
+                                                                       state=ApiJobState.SUCCESS,
+                                                                       status_code=response.status_code,
+                                                                       elapsed=response.elapsed.total_seconds())
 
 
 class ApiRunner:
@@ -168,23 +195,23 @@ class ApiRunner:
                         'interface Id：{}, testPlan Id expression {} is not regular'.format(interface.id,
                                                                                            self.test_plan_id,
                                                                                            _assert['expression']))
-                    update_api_job_fail(self.test_plan_id, interface.id, response.text)
+                    update_api_job_fail(self.test_plan_id, interface.id, response)
                     break
                 else:
                     pattern = isRegular(_assert['expression'])
                     re_result = assert_regular(pattern, response.text)
                     if not re_result:  # 断言失败
-                        update_api_job_fail(self.test_plan_id, interface.id, response.text)  # 跟新interfaceJob状态失败
+                        update_api_job_fail(self.test_plan_id, interface.id, response)  # 跟新interfaceJob状态失败
                         break
                     else:
                         try:
                             calculate_fun = getattr(operation, _assert['calculate'])
                         except AttributeError as es:
                             logger.error("calculate rule {} is not exist！".format(_assert['calculate']))
-                            update_api_job_fail(self.test_plan_id, interface.id, response.text)
+                            update_api_job_fail(self.test_plan_id, interface.id, response)
                             break
                         if not calculate_fun(re_result, _assert['expect']):
-                            update_api_job_fail(self.test_plan_id, interface.id, response.text)  # 跟新interfaceJob状态失败
+                            update_api_job_fail(self.test_plan_id, interface.id, response)  # 跟新interfaceJob状态失败
                             break
             elif _assert['assertType'] == "delimiter":
                 # 分隔符取值
@@ -193,23 +220,23 @@ class ApiRunner:
                     logger.error("delimiter error：{}, interfaceJobId: {}, test_plan Id:{}".format(_assert['expression'],
                                                                                                   interface.id,
                                                                                                   self.test_plan_id))
-                    update_api_job_fail(self.test_plan_id, interface.id, response.text)
+                    update_api_job_fail(self.test_plan_id, interface.id, response)
                     break
                 elif delimiter_result == dict():
-                    update_api_job_fail(self.test_plan_id, interface.id, response.text)
+                    update_api_job_fail(self.test_plan_id, interface.id, response)
                     break
                 else:
                     try:
                         calculate_fun = getattr(operation, _assert['calculate'])
                     except AttributeError as es:
                         logger.error("calculate rule {} is not exist！".format(_assert['calculate']))
-                        update_api_job_fail(self.test_plan_id, interface.id, response.text)
+                        update_api_job_fail(self.test_plan_id, interface.id, response)
                         break
                     if not calculate_fun(delimiter_result, _assert['expect']):
-                        update_api_job_fail(self.test_plan_id, interface.id, response.text)
+                        update_api_job_fail(self.test_plan_id, interface.id, response)
                         break
         else:  # 所有断言验证通过
-            update_api_job_success(self.test_plan_id, interface.id, response.text)
+            update_api_job_success(self.test_plan_id, interface.id, response)
 
     def processing_plant(self, interface_job):
         """

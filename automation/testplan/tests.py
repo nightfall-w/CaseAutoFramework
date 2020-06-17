@@ -24,23 +24,34 @@
 #
 # result = getattr(operation, 'dd')
 # print(result)
-import itertools
+# import itertools
+#
+#
+# class cartesian(object):
+#     def __init__(self):
+#         self._data_list = list()
+#
+#     def add_data(self, data=list()):  # 添加生成笛卡尔积的数据列表
+#         self._data_list.append(data)
+#
+#     def build(self):  # 计算笛卡尔积
+#         for item in itertools.product(*self._data_list):
+#             print(item)
+#
+#
+# car = cartesian()
+# car.add_data([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+# car.add_data([[10, 11, 12], [13, 14, 15], [16, 17, 18]])
+# car.add_data([66, 88, 99])
+# car.build()
 
-
-class cartesian(object):
-    def __init__(self):
-        self._data_list = list()
-
-    def add_data(self, data=list()):  # 添加生成笛卡尔积的数据列表
-        self._data_list.append(data)
-
-    def build(self):  # 计算笛卡尔积
-        for item in itertools.product(*self._data_list):
-            print(item)
-
-
-car = cartesian()
-car.add_data([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
-car.add_data([[10, 11, 12], [13, 14, 15], [16, 17, 18]])
-car.add_data([66, 88, 99])
-car.build()
+import requests
+r = requests.get("http://www.cnblogs.com/yoyoketang/")
+print(r.elapsed)
+print(r.elapsed.total_seconds())
+print(r.elapsed.microseconds)
+print(r.elapsed.seconds)
+print(r.elapsed.days)
+print(r.elapsed.max)
+print(r.elapsed.min)
+print(r.elapsed.resolution)

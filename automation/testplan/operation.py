@@ -1,5 +1,20 @@
 def equals(result, expect):
+    if expect == "true" or expect == "True":
+        expect = True
+    if expect == "false" or expect == "False":
+        expect = False
     if str(result) == str(expect):
+        return True
+    else:
+        return False
+
+
+def not_equals(result, expect):
+    if expect == "true" or expect == "True":
+        expect = True
+    if expect == "false" or expect == "False":
+        expect = False
+    if str(result) != str(expect):
         return True
     else:
         return False
