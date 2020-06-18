@@ -57,34 +57,48 @@
 # print(r.elapsed.resolution)
 import json
 
-
-def assert_delimiter(key_str, response_text):
-    """
-    分隔符处理
-    """
-    hierarchy = key_str.split('.')[1:]
-    try:
-        if hierarchy[0] == 'status_code':
-            # result = response.status_code
-            return 200
-        response_json = json.loads(response_text)
-        result = response_json
-        for tier in hierarchy:
-            try:
-                tier = int(tier)
-            except ValueError:
-                tier = tier
-            if isinstance(tier, int):
-                try:
-                    result = result[tier]
-                except IndexError as es:
-                    # logger.error(es)
-                    return "EXCEPTION"
-            else:
-                result = result.get(tier, dict())
-        print(result)
-        return result
-    except Exception as es:
-        return "EXCEPTION"
-
-assert_delimiter('r.aa.5.name', '{"aa":[{"name":"wang"},{"name":"li"}]}')
+# def assert_delimiter(key_str, response_text):
+#     """
+#     分隔符处理
+#     """
+#     hierarchy = key_str.split('.')[1:]
+#     try:
+#         if hierarchy[0] == 'status_code':
+#             # result = response.status_code
+#             return 200
+#         response_json = json.loads(response_text)
+#         result = response_json
+#         for tier in hierarchy:
+#             try:
+#                 tier = int(tier)
+#             except ValueError:
+#                 tier = tier
+#             if isinstance(tier, int):
+#                 try:
+#                     result = result[tier]
+#                 except IndexError as es:
+#                     # logger.error(es)
+#                     return "EXCEPTION"
+#             else:
+#                 result = result.get(tier, dict())
+#         print(result)
+#         return result
+#     except Exception as es:
+#         return "EXCEPTION"
+#
+# assert_delimiter('r.aa.5.name', '{"aa":[{"name":"wang"},{"name":"li"}]}')
+# from functools import reduce
+#
+#
+# def Merge(dict1, dict2):
+#     if not isinstance(dict1, dict):
+#         dict1 = json.loads(dict1)
+#     if not isinstance(dict2, dict):
+#         dict2 = json.loads(dict2)
+#     res = {**dict1, **dict2}
+#     return res
+#
+#
+# a = ['{"a":4,"b":5}', '{"c":7,"d":8}']
+# s = reduce(Merge, a)
+# print(s)

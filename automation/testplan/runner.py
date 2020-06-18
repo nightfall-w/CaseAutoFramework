@@ -2,14 +2,16 @@
 import itertools
 import json
 import re
+from functools import reduce
 
 import requests
+
 from Logger import logger
 from interface.models import InterfaceJobModel, InterfaceModel, InterfaceCacheModel
+from standard.enum import InterFaceType
 from testplan import operation
 from testplan.models import ApiTestPlanModel
 from utils.job_status_enum import ApiJobState, ApiTestPlanState
-from standard.enum import InterFaceType
 
 
 class cartesian(object):
@@ -30,31 +32,57 @@ class cartesian(object):
         return items
 
 
+def update_api_total_number(plan_id, add_num):
+    """
+    【更新当前测试计划的api job总数】
+    """
+    api_testplan_obj = ApiTestPlanModel.objects.get(plan_id=plan_id)
+    current_job_num = api_testplan_obj.result.split('/')[1]
+    api_testplan_obj.result = "0/{}".format(add_num + int(current_job_num))
+    api_testplan_obj.save()
+
+
+def merge(dict1, dict2):
+    if not isinstance(dict1, dict):
+        dict1 = json.loads(dict1)
+    if not isinstance(dict2, dict):
+        dict2 = json.loads(dict2)
+    res = {**dict1, **dict2}
+    return res
+
+
+def parse_parameters(parameters):
+    key_list = []
+    car = cartesian()
+    for k, v in parameters.items():
+        key_list.append(k)
+        if not isinstance(v, list):
+            v = [v, ]
+        car.add_data(v)
+    items = car.build()
+    return items, key_list
+
+
+def get_all_extracts(test_plan_id):
+    extracts_list = InterfaceJobModel.objects.filter(test_plan_id=test_plan_id, extracts__isnull=False).values_list(
+        'extracts', flat=True)
+    extracts_dict = reduce(merge, extracts_list)
+    return extracts_dict
+
+
 def data_drive(interfaceIds, plan_id):
     for interfaceId in interfaceIds:
         interface = InterfaceModel.objects.get(id=interfaceId)
-        if not interface.parameters:  # api没有测试数据集  直接创建api job
+        if not interface.parameters or not json.loads(interface.parameters):  # api没有测试数据集  直接创建api job
             InterfaceJobModel.objects.create(interfaceType=InterFaceType.INSTANCE.value, interface_id=interfaceId,
                                              test_plan_id=plan_id,
                                              state=ApiJobState.WAITING)
-            api_testplan_obj = ApiTestPlanModel.objects.get(plan_id=plan_id)
-            current_job_num = api_testplan_obj.result.split('/')[1]
-            api_testplan_obj.result = "0/{}".format(1 + int(current_job_num))
-            api_testplan_obj.save()
+            update_api_total_number(plan_id=plan_id, add_num=1)
+
         else:  # api有测试数据集， 解析测试数据
-            key_list = []
-            car = cartesian()
             parameters = json.loads(interface.parameters)
-            for k, v in parameters.items():
-                key_list.append(k)
-                if not isinstance(v, list):
-                    v = [v, ]
-                car.add_data(v)
-            items = car.build()
-            api_testplan_obj = ApiTestPlanModel.objects.get(plan_id=plan_id)
-            current_job_num = api_testplan_obj.result.split('/')[1]
-            api_testplan_obj.result = "0/{}".format(len(items) + int(current_job_num))
-            api_testplan_obj.save()
+            items, key_list = parse_parameters(parameters)
+            update_api_total_number(plan_id=plan_id, add_num=len(items))
             for item in items:
                 interfaceCache = InterfaceCacheModel.objects.create(project=interface.project,
                                                                     name=interface.name, desc=interface.desc,
@@ -70,9 +98,11 @@ def data_drive(interfaceIds, plan_id):
                     keys_break_down = keys.split('-')
                     for key_index, key in enumerate(keys_break_down):
                         if len(keys_break_down) == 1:
+                            # 需要对笛卡尔积组合中包含单个元素的情况做统一处理  例如:([1,2,3],[4,5,6],7) 转为([1,2,3],[4,5,6],[7,])
                             item = list(item)
                             item[keys_index] = [item[keys_index], ]
                             item = tuple(item)
+
                         if '$%s' % key in interfaceCache.addr:
                             interfaceCache.addr = interfaceCache.addr.replace('$%s' % key, item[keys_index][key_index],
                                                                               10)
@@ -98,9 +128,7 @@ def data_drive(interfaceIds, plan_id):
                         if '$%s' % key in interfaceCache.asserts:
                             interfaceCache.asserts = interfaceCache.asserts.replace('$%s' % key,
                                                                                     item[keys_index][key_index], 10)
-                        if '$%s' % key in interfaceCache.extract:
-                            interfaceCache.extract = interfaceCache.extract.replace('$%s' % key,
-                                                                                    item[keys_index][key_index], 10)
+
                         interfaceCache.save()
                 InterfaceJobModel.objects.create(interfaceType=InterFaceType.CACHE.value,
                                                  interface_id=interfaceCache.id,
@@ -176,7 +204,7 @@ def update_api_job_fail(test_plan_id, interface_id, response):
 
 def update_api_job_success(test_plan_id, interface_id, response):
     """
-    更新interfaceJob状态为FAIL
+    更新interfaceJob状态为SUCCESS
     """
     InterfaceJobModel.objects.filter(test_plan_id=test_plan_id,
                                      interface_id=interface_id).update(result=response.text,
@@ -198,18 +226,19 @@ class ApiRunner:
         """
         请求处理器
         """
+        # 处理断言
         for _assert in json.loads(interface.asserts):
             if _assert['assertType'] == "regular":
                 # 正则判断逻辑
-                if not isRegular(_assert['rule']):
-                    logger.debug(
-                        'interface Id：{}, testPlan Id expression {} is not regular'.format(interface.id,
-                                                                                           self.test_plan_id,
-                                                                                           _assert['expression']))
+                if not isRegular(_assert['expressions']):
+                    logger.error(
+                        'interface Id：{}, testPlan Id：{} expressions：{} is not regular'.format(interface.id,
+                                                                                               self.test_plan_id,
+                                                                                               _assert['expressions']))
                     update_api_job_fail(self.test_plan_id, interface.id, response)
                     break
                 else:
-                    pattern = isRegular(_assert['expression'])
+                    pattern = isRegular(_assert['expressions'])
                     re_result = assert_regular(pattern, response.text)
                     if not re_result:  # 断言失败
                         update_api_job_fail(self.test_plan_id, interface.id, response)  # 跟新interfaceJob状态失败
@@ -226,11 +255,12 @@ class ApiRunner:
                             break
             elif _assert['assertType'] == "delimiter":
                 # 分隔符取值
-                delimiter_result = assert_delimiter(_assert['expression'], response)
+                delimiter_result = assert_delimiter(_assert['expressions'], response)
                 if delimiter_result == 'EXCEPTION':
-                    logger.error("delimiter error：{}, interfaceJobId: {}, test_plan Id:{}".format(_assert['expression'],
-                                                                                                  interface.id,
-                                                                                                  self.test_plan_id))
+                    logger.error(
+                        "delimiter error：{}, interfaceJobId: {}, test_plan Id:{}".format(_assert['expressions'],
+                                                                                         interface.id,
+                                                                                         self.test_plan_id))
                     update_api_job_fail(self.test_plan_id, interface.id, response)
                     break
                 elif delimiter_result == dict():
@@ -249,6 +279,34 @@ class ApiRunner:
         else:  # 所有断言验证通过
             update_api_job_success(self.test_plan_id, interface.id, response)
 
+        # 处理提取规则
+        extracts_result = {}  # 提取结果的集合
+        for extract in json.loads(interface.extract):
+            if extract['extractType'] == "regular":
+                if not isRegular(extract['expressions']):
+                    logger.error(
+                        'interface Id：{}, testPlan Id：{} expressions：{} is not regular'.format(interface.id,
+                                                                                               self.test_plan_id,
+                                                                                               extract['expressions']))
+                pattern = isRegular(extract['expressions'])
+                re_result = assert_regular(pattern, response.text)
+                if not re_result:  # 没有匹配到结果
+                    extracts_result[extract['variable_name']] = ''
+                else:
+                    extracts_result[extract['variable_name']] = re_result
+
+            elif extract['extractType'] == "delimiter":
+                delimiter_result = assert_delimiter(extract['expressions'], response)
+                if delimiter_result == 'EXCEPTION':
+                    logger.error(
+                        "delimiter error：{}, interfaceJobId: {}, test_plan Id:{}".format(extract['expressions'],
+                                                                                         interface.id,
+                                                                                         self.test_plan_id))
+                    extracts_result[extract['variable_name']] = ''
+                else:
+                    extracts_result[extract['variable_name']] = delimiter_result
+        return extracts_result
+
     def processing_plant(self, interface_job):
         """
         测试计划处理
@@ -258,6 +316,27 @@ class ApiRunner:
             interface = InterfaceModel.objects.get(id=interface_job.interface_id)
         else:
             interface = InterfaceCacheModel.objects.get(id=interface_job.interface_id)
+
+        extracts_dict = get_all_extracts(interface_job.test_plan_id)
+        for key, value in extracts_dict.items():
+            if '$%s' % key in interface.addr:
+                interface.addr = interface.addr.replace('$%s' % key, value, 10)
+            if '$%s' % key in interface.name:
+                interface.name = interface.name.replace('$%s' % key, value, 10)
+            if '$%s' % key in interface.desc:
+                interface.desc = interface.desc.replace('$%s' % key, value, 10)
+            if '$%s' % key in interface.headers:
+                interface.headers = interface.headers.replace('$%s' % key, value, 10)
+            if '$%s' % key in interface.formData:
+                interface.formData = interface.formData.replace('$%s' % key, value, 10)
+            if '$%s' % key in interface.urlencoded:
+                interface.urlencoded = interface.urlencoded.replace('$%s' % key, value, 10)
+            if '$%s' % key in interface.raw:
+                interface.raw = interface.raw.replace('$%s' % key, value, 10)
+            if '$%s' % key in interface.asserts:
+                interface.asserts = interface.asserts.replace('$%s' % key, value, 10)
+        interface.save()
+
         headers = json.loads(interface.headers)  # 请求头
         # 根据请求方式动态选择requests的请求方法
         logger.debug(id(self.session))
@@ -266,17 +345,15 @@ class ApiRunner:
         if json.loads(interface.formData):  # form-data文件请求
             data = json.loads(interface.formData)
             response = requests_fun(url=interface.addr, headers=headers, data=data)
-            self.dispose_response(interface=interface, response=response)
         elif json.loads(interface.urlencoded):  # form 表单
             data = json.loads(interface.urlencoded)
             response = requests_fun(url=interface.addr, headers=headers, data=data)
-            self.dispose_response(interface=interface, response=response)
         elif json.loads(interface.raw):  # json请求
             response = requests_fun(url=interface.addr, headers=headers, data=interface.raw.encode("utf-8"))
-            self.dispose_response(interface=interface, response=response)
         else:
             response = requests_fun(url=interface.addr, headers=headers)
-            self.dispose_response(interface=interface, response=response)
+        extracts_result = self.dispose_response(interface=interface, response=response)
+        InterfaceJobModel.objects.filter(id=interface_job.id).update(extracts=json.dumps(extracts_result))
 
     def distributor(self):
         # 分配器

@@ -66,11 +66,12 @@ class InterfaceJobModel(models.Model):
                                      max_length=10, help_text="接口类型")
     interface_id = models.IntegerField(verbose_name="接口id", null=False, help_text="接口id")
     test_plan_id = models.CharField(verbose_name="测试计划id", max_length=50, null=False, help_text="测试计划id")
+    extracts = models.TextField(verbose_name="提取结果", null=False, default='{}', help_text="提取结果")
     state = models.CharField(verbose_name="接口测试状态", null=False, max_length=10, help_text="接口测试状态")
-    create_data = models.DateTimeField(verbose_name="创建时间", auto_now_add=True, help_text="创建时间")
     result = models.TextField(verbose_name="接口响应结果", null=True, help_text="接口响应结果")
     status_code = models.IntegerField(verbose_name="响应状态码", help_text="响应状态码", null=True)
     elapsed = models.FloatField(verbose_name="响应时间", null=True, help_text="响应时间")
+    create_data = models.DateTimeField(verbose_name="创建时间", auto_now_add=True, help_text="创建时间")
 
     class Meta:
         db_table = "interface_job"
