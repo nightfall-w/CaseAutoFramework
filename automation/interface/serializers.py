@@ -8,6 +8,19 @@ from interface.models import InterfaceModel, InterfaceHistory
 
 
 class InterfaceSerializer(serializers.ModelSerializer):
+    headers = serializers.CharField(default='{}', help_text="请求头", required=False,
+                                    max_length=2000)
+    formData = serializers.CharField(default='{}', help_text="表单数据包括文件", required=False,
+                                     max_length=2000)
+    urlencoded = serializers.CharField(default='{}', required=False,
+                                       max_length=2000,
+                                       help_text="url参数params,数据转换为键值对，&分隔后用?拼接在url后面")
+    raw = serializers.CharField(default='{}', max_length=2000, required=False,
+                                help_text="可以上传任意格式的文本，可以上传text、json、xml、html等")
+    asserts = serializers.CharField(default='[]', help_text="断言", max_length=2000, required=False)
+    parameters = serializers.CharField(default='{}', help_text="参数集", max_length=2000, required=False)
+    extract = serializers.CharField(default='[]', help_text="出参", max_length=2000, required=False)
+
     class Meta:
         model = InterfaceModel
         fields = '__all__'
@@ -32,6 +45,36 @@ class InterfaceSerializer(serializers.ModelSerializer):
 
 
 class InterfaceTestSerializer(serializers.ModelSerializer):
+    """
+     此处的`fields`字段是用来替换上面Serializer内部Meta类中指定的`fields`属性值
+    """
+
+    def __init__(self, *args, **kwargs):
+        # 在super执行之前
+        # 将传递的`fields`中的字段从kwargs取出并剔除，避免其传递给基类ModelSerializer
+        # 注意此处`fields`中在默认`self.fields`属性中不存在的字段将无法被序列化 也就是`fields`中的字段应该
+        # 是`self.fields`的子集
+        fields = kwargs.pop('fields', None)
+
+        super().__init__(*args, **kwargs)
+
+        if fields is not None:
+            # 从默认`self.fields`属性中剔除非`fields`中指定的字段
+            allowed = set(fields)
+            existing = set(self.fields.keys())
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
+
+    headers = serializers.CharField(default='{}', help_text="请求头", required=False,
+                                    max_length=2000)
+    formData = serializers.CharField(default='{}', help_text="表单数据包括文件", required=False,
+                                     max_length=2000)
+    urlencoded = serializers.CharField(default='{}', required=False,
+                                       max_length=2000,
+                                       help_text="url参数params,数据转换为键值对，&分隔后用?拼接在url后面")
+    raw = serializers.CharField(default='{}', max_length=2000, required=False,
+                                help_text="可以上传任意格式的文本，可以上传text、json、xml、html等")
+
     class Meta:
         model = InterfaceHistory
         fields = '__all__'

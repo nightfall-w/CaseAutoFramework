@@ -1,8 +1,12 @@
-import os
-import time
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import datetime
+import os
+import time
 
+import djcelery
+from kombu import Queue, Exchange
+
+djcelery.setup_loader()
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Quick-start development settings - unsuitable for production
@@ -26,6 +30,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'djcelery',
     'corsheaders',
     'case',
     'interface',
@@ -74,12 +79,36 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'automation',
         'USER': 'root',
-        'PASSWORD': 'root123',
+        'PASSWORD': '',
         'HOST': '127.0.0.1',
         'PORT': 3306,
     }
 }
 
+# CELERY STUFF
+BROKER_URL = 'amqp://guest:guest@localhost:5672//'  # 使用的消息队列rabbitmq
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/2'  # 结果使用的存储介质为redis
+CELERY_TASK_SERIALIZER = 'json'  # 消息任务的序列化方式
+CELERY_RESULT_SERIALIZER = 'json'  # 结果的序列化方式
+CELERY_TASK_RESULT_EXPIRES = 60 * 60  # celery任务执行结果的超时时
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TIMEZONE = 'Asia/Shanghai'
+
+CELERY_QUEUES = (
+    Queue(
+        "default",
+        Exchange("default"),
+        routing_key="default"),
+    Queue(
+        "ApiTestPlan",
+        Exchange("ApiTestPlan"),
+        routing_key="ApiTestPlan"),
+)
+# Queue的路由
+CELERY_ROUTES = {
+    'ApiTestPlan': {"queue": "ApiTestPlan",
+                    "routing_key": "ApiTestPlan"},
+}
 # Password validation
 
 AUTH_PASSWORD_VALIDATORS = [

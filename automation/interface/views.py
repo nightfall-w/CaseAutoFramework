@@ -1,5 +1,4 @@
 import json
-
 import requests
 from rest_framework import viewsets, pagination, permissions, status
 from rest_framework.response import Response
@@ -38,9 +37,10 @@ class InterfaceViewSet(viewsets.ModelViewSet):
 class InterfaceTestViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = InterfaceTestSerializer
+    pagination_class = pagination.LimitOffsetPagination
 
     def get_queryset(self):
-        return InterfaceHistory.objects.all()
+        return InterfaceHistory.objects.filter(user=self.request.user).order_by('-id')
 
     def create(self, request, *args, **kwargs):
         """
@@ -58,17 +58,29 @@ class InterfaceTestViewSet(viewsets.ModelViewSet):
             serializer.save()
         interface = serializer.data
         requests_fun = getattr(requests, interface.get('request_mode').lower())
-        headers = json.loads(interface.get('headers', {}))  # 请求头
-        if json.loads(interface.get('formData', {})):  # form-data文件请求
-            data = json.loads(interface['formData'])
-            response = requests_fun(url=interface.get('addr'), headers=headers, data=data)
-        elif json.loads(interface.get('urlencoded')):  # form 表单
-            data = json.loads(interface.get('urlencoded'))
-            response = requests_fun(url=interface.get('addr'), headers=headers, data=data)
-        elif json.loads(interface.get('raw')):  # json请求
-            response = requests_fun(url=interface.get('addr'), headers=headers,
-                                    data=interface.get('raw').encode("utf-8"))
-        else:
-            response = requests_fun(url=interface.get('addr'), headers=headers)
-        return Response({"response": response.text, "status_code": response.status_code,
-                         "elapsed": response.elapsed.total_seconds()})
+        headers = json.loads(interface.get('headers', '{}'))  # 请求头
+        try:
+            if json.loads(interface.get('formData', '{}')):  # form-data文件请求
+                data = json.loads(interface['formData'])
+                response = requests_fun(url=interface.get('addr'), headers=headers, data=data)
+            elif json.loads(interface.get('urlencoded', '{}')):  # form 表单
+                data = json.loads(interface.get('urlencoded'))
+                response = requests_fun(url=interface.get('addr'), headers=headers, data=data)
+            elif json.loads(interface.get('raw', '{}')):  # json请求
+                response = requests_fun(url=interface.get('addr'), headers=headers,
+                                        data=interface.get('raw').encode("utf-8"))
+            else:
+                response = requests_fun(url=interface.get('addr'), headers=headers)
+            request_headers = json.dumps(dict(response.request.headers))
+            response_headers = json.dumps(dict(response.headers))
+            return Response(
+                {"response": response.text, "request_headers": request_headers, "response_headers": response_headers,
+                 "status_code": response.status_code,
+                 "elapsed": response.elapsed.total_seconds()})
+        except Exception as es:
+            return Response({"error": str(es)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def list(self, request, *args, **kwargs):
+        page = self.paginate_queryset(self.get_queryset())
+        serializers = InterfaceTestSerializer(page, many=True, fields=('id', 'request_mode', 'addr'))
+        return Response(serializers.data)

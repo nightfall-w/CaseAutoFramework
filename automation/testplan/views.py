@@ -10,12 +10,12 @@ from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.schemas import AutoSchema
 from rest_framework.views import APIView
-
+from testplan.tasks import ApiTestPlan
 from Logger import logger
 from interface.models import InterfaceModel
 from testplan.models import ApiTestPlanModel
 from utils.job_status_enum import ApiTestPlanState
-from .runner import ApiRunner, data_drive
+from .runner import data_drive
 
 
 @method_decorator(csrf_exempt, name='post')
@@ -62,7 +62,8 @@ class ApiTestPlanView(APIView):
             if not api_testplan_obj:
                 return Response({"error": "创建api测试计划失败"})
             data_drive(interfaceIds, plan_id)
-            ApiRunner(test_plan_id=plan_id).distributor()
+            # ApiRunner(test_plan_id=plan_id).distributor()
+            ApiTestPlan.delay(plan_id)  # 使用celery task 处理testplan runner
             return Response({"trigger_success": True})
 
 

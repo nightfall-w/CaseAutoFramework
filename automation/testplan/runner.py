@@ -318,7 +318,6 @@ class ApiRunner:
             interface = InterfaceCacheModel.objects.get(id=interface_job.interface_id)
 
         extracts_dict = get_all_extracts(interface_job.test_plan_id)
-        logger.info(extracts_dict)
         for key, value in extracts_dict.items():
             if '$%s' % key in interface.addr:
                 interface.addr = interface.addr.replace('$%s' % key, value, 10)

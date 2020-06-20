@@ -20,9 +20,9 @@ class InterfaceModel(models.Model):
                            help_text="url参数params,数据转换为键值对，&分隔后用?拼接在url后面")
     raw = JSONField(verbose_name="requestBody", null=True, default='{}',
                     help_text="可以上传任意格式的文本，可以上传text、json、xml、html等")
-    asserts = JSONField(verbose_name="断言", null=True, default='{}', help_text="断言")
+    asserts = JSONField(verbose_name="断言", null=True, default='[]', help_text="断言")
     parameters = JSONField(verbose_name="参数集", null=True, default='{}', help_text="参数集")
-    extract = JSONField(verbose_name="出参", null=True, default='{}', help_text="出参")
+    extract = JSONField(verbose_name="出参", null=True, default='[]', help_text="出参")
 
     class Meta:
         db_table = 'interface'
@@ -48,8 +48,8 @@ class InterfaceCacheModel(models.Model):
                            help_text="url参数params,数据转换为键值对，&分隔后用?拼接在url后面")
     raw = JSONField(verbose_name="requestBody", null=True, default='{}',
                     help_text="可以上传任意格式的文本，可以上传text、json、xml、html等")
-    asserts = JSONField(verbose_name="断言", null=True, default='{}', help_text="断言")
-    extract = JSONField(verbose_name="出参", null=True, default='{}', help_text="出参")
+    asserts = JSONField(verbose_name="断言", null=True, default='[]', help_text="断言")
+    extract = JSONField(verbose_name="出参", null=True, default='[]', help_text="出参")
 
     class Meta:
         db_table = 'interface_cache'
@@ -79,7 +79,7 @@ class InterfaceHistory(models.Model):
         verbose_name = verbose_name_plural = "在线postman测试历史记录"
 
     def __str__(self):
-        return self.name
+        return self.addr
 
 
 class InterfaceJobModel(models.Model):
