@@ -10,7 +10,7 @@ from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.schemas import AutoSchema
 from rest_framework.views import APIView
-from testplan.tasks import ApiTestPlan
+from celery_tasks.tasks import ApiTestPlan
 from Logger import logger
 from interface.models import InterfaceModel
 from testplan.models import ApiTestPlanModel

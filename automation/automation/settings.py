@@ -3,10 +3,8 @@ import datetime
 import os
 import time
 
-import djcelery
 from kombu import Queue, Exchange
 
-djcelery.setup_loader()
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Quick-start development settings - unsuitable for production
@@ -30,7 +28,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'djcelery',
+    'django_celery_beat',
     'corsheaders',
     'case',
     'interface',
@@ -86,13 +84,16 @@ DATABASES = {
 }
 
 # CELERY STUFF
-BROKER_URL = 'amqp://guest:guest@localhost:5672//'  # 使用的消息队列rabbitmq
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/2'  # 结果使用的存储介质为redis
-CELERY_TASK_SERIALIZER = 'json'  # 消息任务的序列化方式
-CELERY_RESULT_SERIALIZER = 'json'  # 结果的序列化方式
-CELERY_TASK_RESULT_EXPIRES = 60 * 60  # celery任务执行结果的超时时
-CELERY_ACCEPT_CONTENT = ['json']
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers.DatabaseScheduler'
+BROKER_URL = 'amqp://admin:admin@localhost:5672//'
+CELERY_BROKER_URL = 'amqp://admin:admin@localhost:5672//'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/2'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_ENABLE_UTC = False
 CELERY_TIMEZONE = 'Asia/Shanghai'
+DJANGO_CELERY_BEAT_TZ_AWARE = False
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
 
 CELERY_QUEUES = (
     Queue(
