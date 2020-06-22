@@ -6,12 +6,13 @@ import coreschema
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework import permissions
+from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.schemas import AutoSchema
 from rest_framework.views import APIView
-from celery_tasks.tasks import ApiTestPlan
+
 from Logger import logger
+from celery_tasks.tasks import ApiTestPlan
 from interface.models import InterfaceModel
 from testplan.models import ApiTestPlanModel
 from utils.job_status_enum import ApiTestPlanState
@@ -49,22 +50,49 @@ class ApiTestPlanView(APIView):
             return Response({"error": "接口id未提供"})
         for id in interfaceIds:
             interfaceObj = InterfaceModel.objects.filter(id=id).first()
-            print(interfaceObj.get_request_mode_display())
             if not interfaceObj:
-                return Response({"error": "接口名为{},地址为{}的api不存在".format(interfaceObj.name, interfaceObj.addr)})
-        else:
-            # 创建接口测试计划
-            plan_id = uuid.uuid4()
-            api_testplan_obj = ApiTestPlanModel.objects.create(name=test_plan_name, plan_id=plan_id,
-                                                               project=int(projectId),
-                                                               state=ApiTestPlanState.WAITING, create_user=request.user,
-                                                               result="0/0")
-            if not api_testplan_obj:
-                return Response({"error": "创建api测试计划失败"})
-            data_drive(interfaceIds, plan_id)
-            # ApiRunner(test_plan_id=plan_id).distributor()
-            ApiTestPlan.delay(plan_id)  # 使用celery task 处理testplan runner
-            return Response({"trigger_success": True})
+                return Response({"error": "接口id为{}的api不存在".format(id)})
+        plan_id = uuid.uuid4()
+        ApiTestPlanModel.objects.create(name=test_plan_name, plan_id=plan_id,
+                                        project=int(projectId),
+                                        interfaceIds=json.dumps(interfaceIds),
+                                        state=ApiTestPlanState.WAITING, create_user=request.user,
+                                        result="0/0")
+        return Response(
+            {'success': True, "test_plan_name": test_plan_name, "interfaceIds": interfaceIds, "projectId": projectId})
+
+
+@method_decorator(csrf_exempt, name='post')
+class TriggerPlan(APIView):
+    """
+    【触发接口测试计划】
+    """
+    Schema = AutoSchema(manual_fields=[
+        coreapi.Field(name="projectId", required=True, location="form",
+                      schema=coreschema.String(description='项目id')),
+        coreapi.Field(name="testPlanId", required=True, location="form",
+                      schema=coreschema.String(description='接口测试计划uid'))
+    ])
+    schema = Schema
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request):
+        receive_data = request.data
+        testplan_id = receive_data.get('testPlanId', None)
+        project_id = receive_data.get('projectId', None)
+        if not all([testplan_id, project_id]):
+            return Response({"error": "缺少必要的参数"}, status=status.HTTP_400_BAD_REQUEST)
+        api_testplan = ApiTestPlanModel.objects.filter(plan_id=testplan_id, project=project_id).first()
+        if not api_testplan:
+            return Response({"error": "testplanId为：{}不存在".format(testplan_id)})
+        if api_testplan.state == ApiTestPlanState.RUNNING:
+            return Response({"error": "testplanId为：{}已经在执行".format(testplan_id)})
+        interfaceIds = json.loads(api_testplan.interfaceIds)
+        api_testplan.state = ApiTestPlanState.RUNNING
+        api_testplan.result = "0/0"
+        api_testplan.save()
+        ApiTestPlan.delay(testplan_id, interfaceIds)  # 使用celery task 处理testplan runner
+        return Response({"success": True})
 
 
 @method_decorator(csrf_exempt, name='get')

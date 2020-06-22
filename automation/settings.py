@@ -77,7 +77,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'automation',
         'USER': 'root',
-        'PASSWORD': '',
+        'PASSWORD': 'root123',
         'HOST': '127.0.0.1',
         'PORT': 3306,
     }
@@ -85,8 +85,8 @@ DATABASES = {
 
 # CELERY STUFF
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers.DatabaseScheduler'
-BROKER_URL = 'amqp://admin:admin@localhost:5672//'
-CELERY_BROKER_URL = 'amqp://admin:admin@localhost:5672//'
+BROKER_URL = 'amqp://admin:admin@192.168.21.175:5672/test'
+CELERY_BROKER_URL = 'amqp://admin:admin@192.168.21.175:5672/test'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/2'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_ENABLE_UTC = False

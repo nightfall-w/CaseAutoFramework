@@ -339,7 +339,6 @@ class ApiRunner:
 
         headers = json.loads(interface.headers)  # 请求头
         # 根据请求方式动态选择requests的请求方法
-        logger.debug(id(self.session))
         requests_fun = getattr(self.session, interface.get_request_mode_display().lower())
         ApiTestPlanModel.objects.filter(plan_id=self.test_plan_id).update(state=ApiTestPlanState.RUNNING)
         if json.loads(interface.formData):  # form-data文件请求
