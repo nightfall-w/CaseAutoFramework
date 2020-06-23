@@ -1,4 +1,4 @@
-class ApiTestPlanState:
+class ApiTestPlanTaskState:
     WAITING = "WAITING"
     RUNNING = "RUNNING"
     FINISH = "FINISH"

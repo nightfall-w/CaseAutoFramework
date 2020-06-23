@@ -2,6 +2,7 @@
 import itertools
 import json
 import re
+import time
 from functools import reduce
 
 import requests
@@ -10,8 +11,8 @@ from Logger import logger
 from interface.models import InterfaceJobModel, InterfaceModel, InterfaceCacheModel
 from standard.enum import InterFaceType
 from testplan import operation
-from testplan.models import ApiTestPlanModel
-from utils.job_status_enum import ApiJobState, ApiTestPlanState
+from testplan.models import ApiTestPlanTaskModel
+from utils.job_status_enum import ApiJobState, ApiTestPlanTaskState
 
 
 class cartesian(object):
@@ -32,14 +33,14 @@ class cartesian(object):
         return items
 
 
-def update_api_total_number(plan_id, add_num):
+def update_api_total_number(api_test_plan_task_id, add_num):
     """
     【更新当前测试计划的api job总数】
     """
-    api_testplan_obj = ApiTestPlanModel.objects.get(plan_id=plan_id)
-    current_job_num = api_testplan_obj.result.split('/')[1]
-    api_testplan_obj.result = "0/{}".format(add_num + int(current_job_num))
-    api_testplan_obj.save()
+    api_testplan_task_obj = ApiTestPlanTaskModel.objects.get(id=api_test_plan_task_id)
+    current_job_num = api_testplan_task_obj.api_job_number + add_num
+    api_testplan_task_obj.api_job_number = current_job_num
+    api_testplan_task_obj.save()
 
 
 def merge(dict1, dict2):
@@ -70,19 +71,19 @@ def get_all_extracts(test_plan_id):
     return extracts_dict
 
 
-def data_drive(interfaceIds, plan_id):
+def data_drive(interfaceIds, plan_id, api_test_plan_task_id):
     for interfaceId in interfaceIds:
         interface = InterfaceModel.objects.get(id=interfaceId)
         if not interface.parameters or not json.loads(interface.parameters):  # api没有测试数据集  直接创建api job
             InterfaceJobModel.objects.create(interfaceType=InterFaceType.INSTANCE.value, interface_id=interfaceId,
-                                             test_plan_id=plan_id,
+                                             test_plan_id=plan_id, api_test_plan_task_id=api_test_plan_task_id,
                                              state=ApiJobState.WAITING)
-            update_api_total_number(plan_id=plan_id, add_num=1)
+            update_api_total_number(api_test_plan_task_id=api_test_plan_task_id, add_num=1)
 
         else:  # api有测试数据集， 解析测试数据
             parameters = json.loads(interface.parameters)
             items, key_list = parse_parameters(parameters)
-            update_api_total_number(plan_id=plan_id, add_num=len(items))
+            update_api_total_number(api_test_plan_task_id=api_test_plan_task_id, add_num=len(items))
             for item in items:
                 interfaceCache = InterfaceCacheModel.objects.create(project=interface.project,
                                                                     name=interface.name, desc=interface.desc,
@@ -131,6 +132,7 @@ def data_drive(interfaceIds, plan_id):
 
                         interfaceCache.save()
                 InterfaceJobModel.objects.create(interfaceType=InterFaceType.CACHE.value,
+                                                 api_test_plan_task_id=api_test_plan_task_id,
                                                  interface_id=interfaceCache.id,
                                                  test_plan_id=plan_id,
                                                  state=ApiJobState.WAITING)
@@ -218,8 +220,9 @@ class ApiRunner:
     Api case测执行调度器
     """
 
-    def __init__(self, test_plan_id):
+    def __init__(self, test_plan_id, test_plan_task_id):
         self.test_plan_id = test_plan_id
+        self.test_plan_task_id = test_plan_task_id
         self.session = requests.session()
 
     def dispose_response(self, interface, response):
@@ -340,7 +343,6 @@ class ApiRunner:
         headers = json.loads(interface.headers)  # 请求头
         # 根据请求方式动态选择requests的请求方法
         requests_fun = getattr(self.session, interface.get_request_mode_display().lower())
-        ApiTestPlanModel.objects.filter(plan_id=self.test_plan_id).update(state=ApiTestPlanState.RUNNING)
         if json.loads(interface.formData):  # form-data文件请求
             data = json.loads(interface.formData)
             response = requests_fun(url=interface.addr, headers=headers, data=data)
@@ -356,13 +358,22 @@ class ApiRunner:
 
     def distributor(self):
         # 分配器
-        interfaceJobs = InterfaceJobModel.objects.filter(test_plan_id=self.test_plan_id)
+        interfaceJobs = InterfaceJobModel.objects.filter(test_plan_id=self.test_plan_id,
+                                                         api_test_plan_task_id=self.test_plan_task_id)
+        start_time = time.time()
+        ApiTestPlanTaskModel.objects.filter(test_plan_uid=self.test_plan_id, id=self.test_plan_task_id).update(
+            state=ApiTestPlanTaskState.RUNNING)
         for interfaceJob in interfaceJobs:
             self.processing_plant(interfaceJob)
             upInterfaces = InterfaceJobModel.objects.get(id=interfaceJob.id)
             if upInterfaces.state == ApiJobState.SUCCESS:
-                test_plan = ApiTestPlanModel.objects.get(plan_id=self.test_plan_id)
-                test_plan_result = test_plan.result.split('/')
-                test_plan.result = str(int(test_plan_result[0]) + 1) + '/' + str(test_plan_result[1])
-                test_plan.save()
-        ApiTestPlanModel.objects.filter(plan_id=self.test_plan_id).update(state=ApiTestPlanState.FINISH)
+                test_plan_task = ApiTestPlanTaskModel.objects.get(id=self.test_plan_task_id)
+                test_plan_task.success_num = test_plan_task.success_num + 1
+                test_plan_task.save()
+            else:
+                test_plan_task = ApiTestPlanTaskModel.objects.get(id=self.test_plan_task_id)
+                test_plan_task.failed_num = test_plan_task.failed_num + 1
+                test_plan_task.save()
+        used_time = time.time() - start_time
+        ApiTestPlanTaskModel.objects.filter(id=self.test_plan_task_id).update(state=ApiTestPlanTaskState.FINISH,
+                                                                              used_time=used_time)

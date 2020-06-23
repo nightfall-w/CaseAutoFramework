@@ -14,9 +14,8 @@ from rest_framework.views import APIView
 from Logger import logger
 from celery_tasks.tasks import ApiTestPlan
 from interface.models import InterfaceModel
-from testplan.models import ApiTestPlanModel
-from utils.job_status_enum import ApiTestPlanState
-from .runner import data_drive
+from testplan.models import ApiTestPlanModel, ApiTestPlanTaskModel
+from utils.job_status_enum import ApiTestPlanTaskState
 
 
 @method_decorator(csrf_exempt, name='post')
@@ -56,8 +55,7 @@ class ApiTestPlanView(APIView):
         ApiTestPlanModel.objects.create(name=test_plan_name, plan_id=plan_id,
                                         project=int(projectId),
                                         interfaceIds=json.dumps(interfaceIds),
-                                        state=ApiTestPlanState.WAITING, create_user=request.user,
-                                        result="0/0")
+                                        create_user=request.user, )
         return Response(
             {'success': True, "test_plan_name": test_plan_name, "interfaceIds": interfaceIds, "projectId": projectId})
 
@@ -85,13 +83,11 @@ class TriggerPlan(APIView):
         api_testplan = ApiTestPlanModel.objects.filter(plan_id=testplan_id, project=project_id).first()
         if not api_testplan:
             return Response({"error": "testplanId为：{}不存在".format(testplan_id)})
-        if api_testplan.state == ApiTestPlanState.RUNNING:
-            return Response({"error": "testplanId为：{}已经在执行".format(testplan_id)})
         interfaceIds = json.loads(api_testplan.interfaceIds)
-        api_testplan.state = ApiTestPlanState.RUNNING
-        api_testplan.result = "0/0"
-        api_testplan.save()
-        ApiTestPlan.delay(testplan_id, interfaceIds)  # 使用celery task 处理testplan runner
+        api_test_plan_task = ApiTestPlanTaskModel.objects.create(test_plan_uid=testplan_id,
+                                                                 state=ApiTestPlanTaskState.WAITING, api_job_number=0,
+                                                                 success_num=0, failed_num=0)
+        ApiTestPlan.delay(testplan_id, interfaceIds, api_test_plan_task.id)  # 使用celery task 处理testplan runner
         return Response({"success": True})
 
 
