@@ -26,7 +26,8 @@ class ApiTestPlanView(APIView):
                       schema=coreschema.String(description='项目id')),
         coreapi.Field(name="interfaceIds", required=True, location="form",
                       schema=coreschema.String(description='接口id集合')),
-        coreapi.Field(name="testPlanName", required=True, location="form", schema=coreschema.String(description='计划名'))
+        coreapi.Field(name="testPlanName", required=True,
+                      location="form", schema=coreschema.String(description='计划名'))
     ])
     schema = Schema
     authentication_classes = (JSONWebTokenAuthentication,)
@@ -83,14 +84,16 @@ class TriggerPlan(APIView):
         project_id = receive_data.get('projectId', None)
         if not all([testplan_id, project_id]):
             return Response({"error": "缺少必要的参数"}, status=status.HTTP_400_BAD_REQUEST)
-        api_testplan = ApiTestPlanModel.objects.filter(plan_id=testplan_id, project=project_id).first()
+        api_testplan = ApiTestPlanModel.objects.filter(
+            plan_id=testplan_id, project=project_id).first()
         if not api_testplan:
             return Response({"error": "testplanId为：{}不存在".format(testplan_id)})
         interfaceIds = json.loads(api_testplan.interfaceIds)
         api_test_plan_task = ApiTestPlanTaskModel.objects.create(test_plan_uid=testplan_id,
                                                                  state=ApiTestPlanTaskState.WAITING, api_job_number=0,
                                                                  success_num=0, failed_num=0)
-        ApiTestPlan.delay(testplan_id, interfaceIds, api_test_plan_task.id)  # 使用celery task 处理testplan runner
+        # 使用celery task 处理testplan runner
+        ApiTestPlan.delay(testplan_id, interfaceIds, api_test_plan_task.id)
         return Response({"success": True})
 
 
