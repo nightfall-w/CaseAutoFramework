@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+from django.contrib.auth import login
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import User
 import re
@@ -9,7 +10,7 @@ def jwt_response_payload_handler(token, user, request):
     自定义jwt认证成功返回数据
     """
     user = User.objects.get(id=user.id)
-
+    login(request, user)
     return {
         'token': token,
         'user_id': user.id,

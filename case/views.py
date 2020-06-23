@@ -11,6 +11,7 @@ from rest_framework import permissions, pagination, viewsets, status
 from rest_framework.response import Response
 from rest_framework.schemas import AutoSchema
 from rest_framework.views import APIView
+from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from Logger import logger
 from case.models import CaseModel, CaseTypeModel
@@ -48,6 +49,7 @@ class GitTool(APIView):
         coreapi.Field(name="branch", required=False, location="form", schema=coreschema.String(description='case所在分支')),
     ])
     schema = Schema
+    authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (permissions.IsAuthenticated,)  # 登陆成功的token
 
     def git_pull(self, branch, case_address, branch_path):
@@ -114,6 +116,7 @@ class CaseTree(APIView):
         coreapi.Field(name="path", required=False, location="query", schema=coreschema.String(description='case路径')),
     ])
     schema = Schema
+    authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -140,6 +143,7 @@ class CaseTree(APIView):
 
 
 class CaseViewSet(viewsets.ModelViewSet):
+    authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = CaseSerializer
     pagination_class = pagination.LimitOffsetPagination
@@ -169,6 +173,7 @@ class CaseViewSet(viewsets.ModelViewSet):
 
 
 class CaseTypeViewSet(viewsets.ModelViewSet):
+    authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = CaseTypeSerializer
     pagination_class = pagination.LimitOffsetPagination

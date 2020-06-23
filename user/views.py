@@ -3,7 +3,6 @@ import re
 
 import coreapi
 import coreschema
-from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
@@ -51,33 +50,9 @@ class RegisterView(APIView):
         return Response(response)
 
 
-@method_decorator(csrf_exempt, name='post')
-class LoginView(APIView):
-    Schema = AutoSchema(manual_fields=[
-        coreapi.Field(name="username", required=True, location="form", schema=coreschema.String(description='用户名')),
-        coreapi.Field(name="password", required=True, location="form", schema=coreschema.String(description='密码'))
-    ])
-    schema = Schema
-
-    def post(self, request):
-        """
-        【用户登录】
-        """
-        username = request.data.get('username', None)
-        password = request.data.get('password', None)
-
-        if not all([username, password]):
-            return Response(ResponseCode.REQUEST_DATA_ERROR.value)
-        user = authenticate(username=username, password=password)
-        if not user:
-            return Response(ResponseCode.USERNAME_OR_PASSWORD_ERROR.value)
-        else:
-            login(request, user)
-            return Response(ResponseCode.HANDLE_SUCCESS.value)
-
-
 class RestPasswordView(APIView):
 
     def post(self, request):
+        # TODO 重置密码逻辑
         pass
         return Response({})

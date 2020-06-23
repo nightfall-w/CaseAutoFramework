@@ -10,6 +10,7 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.schemas import AutoSchema
 from rest_framework.views import APIView
+from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from Logger import logger
 from celery_tasks.tasks import ApiTestPlan
@@ -28,6 +29,7 @@ class ApiTestPlanView(APIView):
         coreapi.Field(name="testPlanName", required=True, location="form", schema=coreschema.String(description='计划名'))
     ])
     schema = Schema
+    authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request):
@@ -72,6 +74,7 @@ class TriggerPlan(APIView):
                       schema=coreschema.String(description='接口测试计划uid'))
     ])
     schema = Schema
+    authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request):

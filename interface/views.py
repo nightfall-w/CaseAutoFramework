@@ -1,13 +1,16 @@
 import json
+
 import requests
 from rest_framework import viewsets, pagination, permissions, status
 from rest_framework.response import Response
+from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from .models import InterfaceModel, InterfaceHistory
 from .serializers import InterfaceSerializer, InterfaceTestSerializer
 
 
 class InterfaceViewSet(viewsets.ModelViewSet):
+    authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = InterfaceSerializer
     pagination_class = pagination.LimitOffsetPagination
@@ -35,6 +38,7 @@ class InterfaceViewSet(viewsets.ModelViewSet):
 
 
 class InterfaceTestViewSet(viewsets.ModelViewSet):
+    authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = InterfaceTestSerializer
     pagination_class = pagination.LimitOffsetPagination

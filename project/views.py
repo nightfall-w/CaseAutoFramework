@@ -1,9 +1,12 @@
 from rest_framework import viewsets, pagination, permissions
+from rest_framework_jwt.authentication import JSONWebTokenAuthentication
+
 from .serializers import ProjectSerializer
 from .models import ProjectModel
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
+    authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = ProjectSerializer
     pagination_class = pagination.LimitOffsetPagination
