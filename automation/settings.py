@@ -1,5 +1,6 @@
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import datetime
+import logging
 import os
 import time
 
@@ -168,6 +169,7 @@ USE_TZ = False
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
+# log
 cur_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))  # log_path是存放日志的路径
 log_path = os.path.join(cur_path, 'logs')
 if not os.path.exists(log_path): os.mkdir(log_path)  # 如果不存在这个logs文件夹，就自动创建一个
@@ -242,6 +244,7 @@ LOGGING = {
         },
     }
 }
+logger = logging.getLogger("django")
 
 # 跨域增加忽略
 CORS_ALLOW_CREDENTIALS = True

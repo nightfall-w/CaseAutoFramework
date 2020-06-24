@@ -3,7 +3,7 @@ import json
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from Logger import logger
+from automation.settings import logger
 from interface.models import InterfaceModel, InterfaceHistory
 
 

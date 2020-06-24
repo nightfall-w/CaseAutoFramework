@@ -12,7 +12,7 @@ from rest_framework.schemas import AutoSchema
 from rest_framework.views import APIView
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
-from Logger import logger
+from automation.settings import logger
 from celery_tasks.tasks import ApiTestPlan
 from interface.models import InterfaceModel
 from testplan.models import ApiTestPlanModel, ApiTestPlanTaskModel

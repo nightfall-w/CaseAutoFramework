@@ -7,7 +7,7 @@ from functools import reduce
 
 import requests
 
-from Logger import logger
+from automation.settings import logger
 from interface.models import InterfaceJobModel, InterfaceModel, InterfaceCacheModel
 from standard.enum import InterFaceType
 from testplan import operation

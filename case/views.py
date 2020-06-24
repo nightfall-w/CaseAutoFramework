@@ -13,7 +13,7 @@ from rest_framework.schemas import AutoSchema
 from rest_framework.views import APIView
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
-from Logger import logger
+from automation.settings import logger
 from case.models import CaseModel, CaseTypeModel
 from case.serializers import CaseSerializer, CaseTypeSerializer
 from standard.config import ConfigParser
