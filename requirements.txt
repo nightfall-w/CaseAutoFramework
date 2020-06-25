@@ -1,12 +1,13 @@
 amqp==2.6.0
 anyjson==0.3.3
+asgiref==3.2.10
 billiard==3.6.3.0
 celery==4.4.5
 certifi==2019.11.28
 chardet==3.0.4
 coreapi==2.3.3
 coreschema==0.0.4
-Django==2.2.13
+Django==3.0.7
 django-celery-beat==2.0.0
 django-cors-headers==3.3.0
 django-picklefield==3.0.1
