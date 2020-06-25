@@ -33,7 +33,7 @@ class ApiTestPlanTaskModel(models.Model):
     used_time = models.FloatField(verbose_name="用时", help_text="用时", null=True)
 
     class Meta:
-        db_table = "api_test_task_plan"
+        db_table = "api_test_plan_task"
         verbose_name = verbose_name_plural = "接口测试计划任务"
 
     def __str__(self):
