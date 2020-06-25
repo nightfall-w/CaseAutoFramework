@@ -5,12 +5,14 @@ from rest_framework.routers import DefaultRouter
 
 from case.views import CaseViewSet, CaseTypeViewSet
 from interface.views import InterfaceViewSet,InterfaceTestViewSet
+from testplan.views import ApiTestPlanViewSet
 from project.views import ProjectViewSet
 
 router = DefaultRouter()
 router.register(r'project', ProjectViewSet, basename='api-project')
 router.register(r'interface', InterfaceViewSet, basename='api-interface')
 router.register(r'interfaceTest', InterfaceTestViewSet, basename='api-interface-test')
+router.register(r'apiTestPlan', ApiTestPlanViewSet, basename='api-test-plan')
 router.register(r'case', CaseViewSet, basename='api-case')
 router.register(r'caseType', CaseTypeViewSet, basename='api-case-type')
 

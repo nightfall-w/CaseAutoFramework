@@ -6,7 +6,7 @@ import coreschema
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework import permissions, status
+from rest_framework import viewsets, pagination, permissions, status
 from rest_framework.response import Response
 from rest_framework.schemas import AutoSchema
 from rest_framework.views import APIView
@@ -17,30 +17,26 @@ from celery_tasks.tasks import ApiTestPlan
 from interface.models import InterfaceModel
 from testplan.models import ApiTestPlanModel, ApiTestPlanTaskModel
 from utils.job_status_enum import ApiTestPlanTaskState
+from .serializers import ApiTestPlanSerializer
 
 
-@method_decorator(csrf_exempt, name='post')
-class ApiTestPlanView(APIView):
-    Schema = AutoSchema(manual_fields=[
-        coreapi.Field(name="projectId", required=True, location="form",
-                      schema=coreschema.String(description='项目id')),
-        coreapi.Field(name="interfaceIds", required=True, location="form",
-                      schema=coreschema.String(description='接口id集合')),
-        coreapi.Field(name="testPlanName", required=True,
-                      location="form", schema=coreschema.String(description='计划名'))
-    ])
-    schema = Schema
+class ApiTestPlanViewSet(viewsets.ModelViewSet):
     authentication_classes = (JSONWebTokenAuthentication,)
+    pagination_class = pagination.LimitOffsetPagination
+    serializer_class = ApiTestPlanSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
-    def post(self, request):
+    def get_queryset(self):
+        return ApiTestPlanModel.objects.all()
+
+    def create(self, request, *args, **kwargs):
         """
         【创建Api测试计划】
         """
         try:
-            projectId = json.loads(request.data.get('projectId', None))
+            projectId = request.data.get('project', None)
             interfaceIds = json.loads(request.data.get('interfaceIds', "[]"))
-            test_plan_name = request.data.get("testPlanName", None)
+            test_plan_name = request.data.get("name", None)
         except Exception as es:
             logger.error(es)
             return Response({"error": "不符合格式的接口列表"})
@@ -61,6 +57,12 @@ class ApiTestPlanView(APIView):
                                         create_user=request.user, )
         return Response(
             {'success': True, "test_plan_name": test_plan_name, "interfaceIds": interfaceIds, "projectId": projectId})
+
+    def list(self, request, *args, **kwargs):
+        api_test_plans = self.get_queryset()
+        page = self.paginate_queryset(api_test_plans)
+        serializer = self.get_serializer(page, many=True)
+        return self.get_paginated_response(serializer.data)
 
 
 @method_decorator(csrf_exempt, name='post')
