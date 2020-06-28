@@ -240,11 +240,11 @@ LOGGING = {
         'log': {
             'handlers': ['error', 'info', 'console', 'default'],
             'level': 'INFO',
-            'propagate': True
+            'propagate': False
         },
     }
 }
-logger = logging.getLogger("django")
+logger = logging.getLogger("log")
 
 # 跨域增加忽略
 CORS_ALLOW_CREDENTIALS = True
