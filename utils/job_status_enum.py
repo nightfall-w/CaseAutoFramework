@@ -12,5 +12,11 @@ class ApiJobState:
 
 class CaseJobState:
     WAITING = "WAITING"
-    SUCCESS = "SUCCESS"
-    FAILED = "FAILED"
+    RUNNING = "RUNNING"
+    FINISH = "FINISH"
+
+
+class CaseTestPlanTaskState:
+    WAITING = "WAITING"
+    RUNNING = "RUNNING"
+    FINISH = "FINISH"

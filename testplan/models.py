@@ -1,4 +1,6 @@
 # -*- coding=utf-8 -*-
+import uuid
+
 from django.db import models
 
 
@@ -42,7 +44,7 @@ class ApiTestPlanTaskModel(models.Model):
 
 class CaseTestPlanModel(models.Model):
     name = models.CharField(verbose_name="计划名称", max_length=30, null=False, help_text="测试计划名")
-    plan_id = models.CharField(verbose_name="计划id", max_length=50, null=False, help_text="计划编号")
+    plan_id = models.CharField(verbose_name="计划id", max_length=50, null=False, help_text="计划编号", default=uuid.uuid4())
     case_paths = models.CharField(verbose_name="case路径集合", help_text="case路径集合", null=False, max_length=5000)
     project = models.IntegerField(verbose_name="项目id", null=False, help_text="项目id")
     create_user = models.CharField(verbose_name="创建人", max_length=10, null=False, help_text="创建人")
