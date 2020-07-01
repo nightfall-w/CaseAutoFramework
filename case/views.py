@@ -14,8 +14,8 @@ from rest_framework.views import APIView
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from automation.settings import logger
-from case.models import CaseModel, CaseTypeModel
-from case.serializers import CaseSerializer, CaseTypeSerializer
+from case.models import CaseModel, CaseTypeModel, CodeBaseModel
+from case.serializers import CaseSerializer, CaseTypeSerializer, CodeBaseSerializer
 from standard.config import ConfigParser
 from standard.enum import CaseStatus
 from standard.enum import ResponseCode
@@ -76,6 +76,7 @@ class GitTool(APIView):
             logger.info('即将切换分支到: {}'.format(branch))
             repo = git.Repo(branch_path)
             logger.info('当前分支: {}'.format(repo.active_branch))
+            repo.git.fetch()
             repo.git.checkout(branch)
             info = repo.git.show()
             author = re.search(r'Author: (.*?) <', info).group(1)
@@ -186,3 +187,13 @@ class CaseTypeViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(case_types)
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)
+
+
+class CodeBaseViewSet(viewsets.ModelViewSet):
+    authentication_classes = (JSONWebTokenAuthentication,)
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = CodeBaseSerializer
+    pagination_class = pagination.LimitOffsetPagination
+
+    def get_queryset(self):
+        return CodeBaseModel.objects.all()

@@ -15,9 +15,9 @@ from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 from automation.settings import logger
 from celery_tasks.tasks import ApiTestPlan
 from interface.models import InterfaceModel
-from testplan.models import ApiTestPlanModel, ApiTestPlanTaskModel
+from testplan.models import ApiTestPlanModel, ApiTestPlanTaskModel, CaseTestPlanModel
 from utils.job_status_enum import ApiTestPlanTaskState
-from .serializers import ApiTestPlanSerializer
+from .serializers import ApiTestPlanSerializer, CaseTestPlanSerializer
 
 
 class ApiTestPlanViewSet(viewsets.ModelViewSet):
@@ -97,6 +97,16 @@ class TriggerPlan(APIView):
         # 使用celery task 处理testplan runner
         ApiTestPlan.delay(testplan_id, interfaceIds, api_test_plan_task.id)
         return Response({"success": True})
+
+
+class CaseTestPlanViewSet(viewsets.ModelViewSet):
+    authentication_classes = (JSONWebTokenAuthentication,)
+    pagination_class = pagination.LimitOffsetPagination
+    serializer_class = CaseTestPlanSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        return CaseTestPlanModel.objects.all()
 
 
 @method_decorator(csrf_exempt, name='get')

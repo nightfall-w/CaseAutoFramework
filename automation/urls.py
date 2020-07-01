@@ -3,9 +3,9 @@ from django.urls import path, include
 from rest_framework.documentation import include_docs_urls
 from rest_framework.routers import DefaultRouter
 
-from case.views import CaseViewSet, CaseTypeViewSet
-from interface.views import InterfaceViewSet,InterfaceTestViewSet
-from testplan.views import ApiTestPlanViewSet
+from case.views import CaseViewSet, CaseTypeViewSet, CodeBaseViewSet
+from interface.views import InterfaceViewSet, InterfaceTestViewSet
+from testplan.views import ApiTestPlanViewSet, CaseTestPlanViewSet
 from project.views import ProjectViewSet
 
 router = DefaultRouter()
@@ -13,7 +13,9 @@ router.register(r'project', ProjectViewSet, basename='api-project')
 router.register(r'interface', InterfaceViewSet, basename='api-interface')
 router.register(r'interfaceTest', InterfaceTestViewSet, basename='api-interface-test')
 router.register(r'apiTestPlan', ApiTestPlanViewSet, basename='api-test-plan')
+router.register(r'caseTestPlan', CaseTestPlanViewSet, basename='case-test-plan')
 router.register(r'case', CaseViewSet, basename='api-case')
+router.register(r'codeBase', CodeBaseViewSet, basename='code-base')
 router.register(r'caseType', CaseTypeViewSet, basename='api-case-type')
 
 urlpatterns = [

@@ -43,3 +43,9 @@ class CaseModel(models.Model):
 
     def __str__(self):
         return self.case_name
+
+
+class CodeBaseModel(models.Model):
+    address = models.CharField(max_length=1000, verbose_name="clone代码库地址(http方式)", help_text="clone代码库地址(http方式)")
+    desc = models.CharField(max_length=1000, verbose_name="描述", help_text="描述", default='')
+    default_branch = models.CharField(max_length=100, verbose_name="默认分支", help_text="默认分支", default="master")

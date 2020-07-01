@@ -169,6 +169,10 @@ USE_TZ = False
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
+# 存图片以及文件
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 # log
 cur_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))  # log_path是存放日志的路径
 log_path = os.path.join(cur_path, 'logs')
