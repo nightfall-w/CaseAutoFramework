@@ -13,7 +13,7 @@ from rest_framework.views import APIView
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from automation.settings import logger
-from celery_tasks.tasks import ApiTestPlan
+from celery_tasks.tasks import api_testplan_executor, case_test_task_executor, case_test_job_executor
 from interface.models import InterfaceModel
 from testplan.models import ApiTestPlanModel, ApiTestPlanTaskModel, CaseTestPlanModel, CaseTestPlanTaskModel, \
     CaseJobModel
@@ -97,7 +97,7 @@ class TriggerApiPlan(APIView):
                                                                  state=ApiTestPlanTaskState.WAITING, api_job_number=0,
                                                                  success_num=0, failed_num=0)
         # 使用celery task 处理testplan runner
-        ApiTestPlan.delay(testplan_id, interfaceIds, api_test_plan_task.id)
+        api_testplan_executor.delay(testplan_id, interfaceIds, api_test_plan_task.id)
         return Response({"success": True})
 
 
@@ -120,7 +120,9 @@ class TriggerCasePlan(APIView):
         coreapi.Field(name="projectId", required=True, location="form",
                       schema=coreschema.String(description='项目id')),
         coreapi.Field(name="testPlanId", required=True, location="form",
-                      schema=coreschema.String(description='接口测试计划uid'))
+                      schema=coreschema.String(description='接口测试计划uid')),
+        coreapi.Field(name="parallel", required=False, location="form",
+                      schema=coreschema.String(description='是否并行执行case,默认False'))
     ])
     schema = Schema
     authentication_classes = (JSONWebTokenAuthentication,)
@@ -130,6 +132,7 @@ class TriggerCasePlan(APIView):
         receive_data = request.data
         testplan_id = receive_data.get('testPlanId', None)
         project_id = receive_data.get('projectId', None)
+        parallel = receive_data.get('parallel', False)
         if not all([testplan_id, project_id]):
             return Response({"error": "缺少必要的参数"}, status=status.HTTP_400_BAD_REQUEST)
         case_test_plan = CaseTestPlanModel.objects.filter(project=project_id, plan_id=testplan_id).first()
@@ -142,9 +145,16 @@ class TriggerCasePlan(APIView):
                                                                    finish_num=0)
         CaseRunner.distributor(case_test_plan_task)
         case_jobs = CaseJobModel.objects.filter(case_task_id=case_test_plan_task.id)
-        for case_job in case_jobs:
-            # TODO 完成case job调度逻辑
-            pass
+
+        # 根据是否并行执行case选择不用的触发器
+        if parallel:
+            '''并行执行'''
+            for case_job in case_jobs:
+                # TODO 完成case job调度逻辑
+                case_test_job_executor.delay(case_job, project_id, case_test_plan.plan_id, case_test_plan_task.id)
+        else:
+            '''串行执行'''
+            case_test_task_executor.delay(case_test_plan_task.id)
         return Response({"success": True})
 
 

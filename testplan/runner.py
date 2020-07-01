@@ -393,9 +393,9 @@ class CaseRunner:
         return True
 
     @classmethod
-    def executor(cls, case_job, project_id_name, test_plan_uid, task_id):
+    def executor(cls, case_job, project_id, test_plan_uid, task_id):
         report_name = case_job.case_path.split('/')[-1].split('.')[0] + '.html'
-        report_path = os.path.join(MEDIA_ROOT, 'html-report', project_id_name, test_plan_uid, task_id)
+        report_path = os.path.join(MEDIA_ROOT, 'html-report', project_id, test_plan_uid, task_id)
         p = subprocess.Popen(
             'pytest {} -vv -s --html={} --self-contained-html'.format(case_job.case_path,
                                                                       os.path.join(report_path, report_name)),
