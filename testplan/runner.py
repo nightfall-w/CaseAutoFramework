@@ -385,8 +385,10 @@ class ApiRunner:
 class CaseRunner:
     @classmethod
     def distributor(cls, test_plan_task):
-        test_plan = CaseTestPlanModel.objects.filter(plan_id=test_plan_task.test_plan_uid).filter()
-        case_paths = json.loads(test_plan.case_paths)
+        case_test_plan = CaseTestPlanModel.objects.filter(plan_id=test_plan_task.test_plan_uid).first()
+        case_paths = case_test_plan.case_paths
+        linux_case_paths = '/'.join(case_paths.split('\\'))
+        case_paths = json.loads(linux_case_paths)
         for case_path in case_paths:
             CaseJobModel.objects.create(case_task_id=test_plan_task.id, case_path=case_path,
                                         state=CaseJobState.WAITING)
@@ -395,12 +397,14 @@ class CaseRunner:
     @classmethod
     def executor(cls, case_job, project_id, test_plan_uid, task_id):
         report_name = case_job.case_path.split('/')[-1].split('.')[0] + '.html'
-        report_path = os.path.join(MEDIA_ROOT, 'html-report', project_id, test_plan_uid, task_id)
+        report_path = os.path.join(MEDIA_ROOT, 'html-report', str(project_id), test_plan_uid, str(task_id))
         p = subprocess.Popen(
             'pytest {} -vv -s --html={} --self-contained-html'.format(case_job.case_path,
                                                                       os.path.join(report_path, report_name)),
             shell=True, stdout=subprocess.PIPE)
-        case_job.log = p.stdout.read().decode('utf-8')
-        result = p.stdout.readlines()[-1].decode('utf-8')
+        out = p.stdout
+        case_job.log = out.read().decode('utf-8')
+        result = case_job.log.split('\r\n')[-2].strip('=').strip()
         case_job.result = result
+        case_job.state = CaseJobState.FINISH
         case_job.save()

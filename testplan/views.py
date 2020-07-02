@@ -138,22 +138,25 @@ class TriggerCasePlan(APIView):
         case_test_plan = CaseTestPlanModel.objects.filter(project=project_id, plan_id=testplan_id).first()
         if not case_test_plan:
             return Response({"error": "testplan {} not find".format(testplan_id)}, status=status.HTTP_400_BAD_REQUEST)
-        case_paths = json.loads(case_test_plan.case_paths)
+        case_paths = case_test_plan.case_paths
+        linux_case_paths = '/'.join(case_paths.split('\\'))
+        case_paths = json.loads(linux_case_paths)
         case_test_plan_task = CaseTestPlanTaskModel.objects.create(test_plan_uid=testplan_id,
                                                                    state=CaseTestPlanTaskState.WAITING,
                                                                    case_job_number=len(case_paths),
                                                                    finish_num=0)
         CaseRunner.distributor(case_test_plan_task)
-        case_jobs = CaseJobModel.objects.filter(case_task_id=case_test_plan_task.id)
 
         # 根据是否并行执行case选择不用的触发器
         if parallel:
             '''并行执行'''
-            for case_job in case_jobs:
+            case_jobs_id = CaseJobModel.objects.filter(case_task_id=case_test_plan_task.id).values_list('id', flat=True)
+            for case_job_id in case_jobs_id:
                 # TODO 完成case job调度逻辑
-                case_test_job_executor.delay(case_job, project_id, case_test_plan.plan_id, case_test_plan_task.id)
+                case_test_job_executor.delay(case_job_id, project_id, case_test_plan.plan_id, case_test_plan_task.id)
         else:
             '''串行执行'''
+            # case_test_task_executor(case_test_plan_task.id)
             case_test_task_executor.delay(case_test_plan_task.id)
         return Response({"success": True})
 

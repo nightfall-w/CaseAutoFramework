@@ -1,7 +1,12 @@
 # -*- coding=utf-8 -*-
+import time
+
+from utils.redis_tool import RedisPoll
+import redis
+from django.db.models import F
 from celery_tasks.celery import app
-from testplan.runner import ApiRunner, data_drive, CaseRunner
 from testplan.models import CaseTestPlanTaskModel, CaseTestPlanModel, CaseJobModel
+from testplan.runner import ApiRunner, data_drive, CaseRunner
 from utils.job_status_enum import CaseTestPlanTaskState
 
 
@@ -34,12 +39,26 @@ def case_test_task_executor(case_task_id):
 
 
 @app.task(name="case_test_job_executor")
-def case_test_job_executor(case_job, project_id, test_plan_uid, task_id):
+def case_test_job_executor(case_job_id, project_id, test_plan_uid, task_id):
     CaseTestPlanTaskModel.objects.filter(id=task_id).update(state=CaseTestPlanTaskState.RUNNING)
+    case_job = CaseJobModel.objects.get(id=case_job_id)
     CaseRunner.executor(case_job=case_job, project_id=project_id, test_plan_uid=test_plan_uid,
                         task_id=task_id)
-    case_task = CaseTestPlanTaskModel.objects.get(id=task_id)
-    case_task.finish_num = case_task.finish_num + 1
-    if case_task.finish_num == case_task.case_job_number:
-        case_task.state = CaseTestPlanTaskState.FINISH
-    case_task.save()
+    lock_key = test_plan_uid + str(task_id)
+    r = redis.Redis(connection_pool=RedisPoll().instance)
+    while True:
+        if r.setnx(lock_key, 1):
+            try:
+                CaseTestPlanTaskModel.objects.filter(id=task_id).update(finish_num=F('finish_num') + 1)
+                case_task = CaseTestPlanTaskModel.objects.get(id=task_id)
+                if case_task.finish_num == case_task.case_job_number:
+                    case_task.state = CaseTestPlanTaskState.FINISH
+                case_task.save()
+            except Exception as es:
+                print(es)
+            finally:
+                r.delete(lock_key)
+                break
+        else:
+            time.sleep(0.5)
+            continue
