@@ -404,6 +404,7 @@ class CaseRunner:
             shell=True, stdout=subprocess.PIPE)
         out = p.stdout
         case_job.log = out.read().decode('utf-8')
+        case_job.report_path = '/media/html-report/{}/{}/{}/{}'.format(project_id, test_plan_uid, task_id, report_name)
         result = case_job.log.split('\r\n')[-2].strip('=').strip()
         case_job.result = result
         case_job.state = CaseJobState.FINISH
