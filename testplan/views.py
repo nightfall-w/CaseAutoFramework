@@ -103,13 +103,21 @@ class TriggerApiPlan(APIView):
 
 
 class CaseTestPlanViewSet(viewsets.ModelViewSet):
+    """
+    【case测试计划】
+    """
+    Schema = AutoSchema(manual_fields=[
+        coreapi.Field(name="projectId", required=False, location="query",
+                      schema=coreschema.String(description='项目id'), )
+    ])
+    schema = Schema
     authentication_classes = (JSONWebTokenAuthentication,)
     pagination_class = pagination.LimitOffsetPagination
     serializer_class = CaseTestPlanSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        return CaseTestPlanModel.objects.all()
+        return CaseTestPlanModel.objects.filter(project=self.request.GET.get('projectId'))
 
 
 @method_decorator(csrf_exempt, name='get')
