@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
-from testplan.models import ApiTestPlanModel, CaseTestPlanModel
+from testplan.models import ApiTestPlanModel, CaseTestPlanModel, CaseTestPlanTaskModel
 
 
 class ApiTestPlanSerializer(serializers.ModelSerializer):
@@ -31,3 +31,10 @@ class CaseTestPlanSerializer(serializers.ModelSerializer):
                 message="已经存在相同名称的case测试计划"
             )
         ]
+
+
+class CaseTaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CaseTestPlanTaskModel
+        fields = "__all__"
+        depth = 1

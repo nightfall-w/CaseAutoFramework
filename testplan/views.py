@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, pagination, permissions, status
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework.schemas import AutoSchema
 from rest_framework.views import APIView
@@ -19,7 +20,7 @@ from testplan.models import ApiTestPlanModel, ApiTestPlanTaskModel, CaseTestPlan
     CaseJobModel
 from utils.job_status_enum import ApiTestPlanTaskState, CaseTestPlanTaskState
 from .runner import CaseRunner
-from .serializers import ApiTestPlanSerializer, CaseTestPlanSerializer
+from .serializers import ApiTestPlanSerializer, CaseTestPlanSerializer, CaseTaskSerializer
 
 
 class ApiTestPlanViewSet(viewsets.ModelViewSet):
@@ -111,6 +112,34 @@ class CaseTestPlanViewSet(viewsets.ModelViewSet):
         return CaseTestPlanModel.objects.all()
 
 
+@method_decorator(csrf_exempt, name='get')
+class CaseTask(APIView):
+    """
+    【case task接口】
+    """
+    Schema = AutoSchema(manual_fields=[
+        coreapi.Field(name="caseTestPlanUid", required=True, location="query",
+                      schema=coreschema.String(description='case测试计划uid')),
+        coreapi.Field(name="limit", required=True, location="query",
+                      schema=coreschema.String(description='limit')),
+        coreapi.Field(name="offset", required=True, location="query",
+                      schema=coreschema.String(description='offset')),
+    ])
+    schema = Schema
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+        receive_data = request.GET
+        case_test_plan_uid = receive_data.get('caseTestPlanUid', None)
+        if not case_test_plan_uid:
+            return Response({"error": "缺少必要参数caseTestPlanUid"}, status=status.HTTP_400_BAD_REQUEST)
+        pg = LimitOffsetPagination()
+        case_tasks = CaseTestPlanTaskModel.objects.filter(test_plan_uid=case_test_plan_uid)
+        page_case_tasks = pg.paginate_queryset(queryset=case_tasks, request=request, view=self)
+        case_tasks_serializer = CaseTaskSerializer(page_case_tasks, many=True)
+        return Response(case_tasks_serializer.data)
+
+
 @method_decorator(csrf_exempt, name='post')
 class TriggerCasePlan(APIView):
     """
@@ -152,11 +181,9 @@ class TriggerCasePlan(APIView):
             '''并行执行'''
             case_jobs_id = CaseJobModel.objects.filter(case_task_id=case_test_plan_task.id).values_list('id', flat=True)
             for case_job_id in case_jobs_id:
-                # TODO 完成case job调度逻辑
                 case_test_job_executor.delay(case_job_id, project_id, case_test_plan.plan_id, case_test_plan_task.id)
         else:
             '''串行执行'''
-            # case_test_task_executor(case_test_plan_task.id)
             case_test_task_executor.delay(case_test_plan_task.id)
         return Response({"success": True})
 
