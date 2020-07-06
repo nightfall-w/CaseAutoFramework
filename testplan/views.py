@@ -20,17 +20,22 @@ from testplan.models import ApiTestPlanModel, ApiTestPlanTaskModel, CaseTestPlan
     CaseJobModel
 from utils.job_status_enum import ApiTestPlanTaskState, CaseTestPlanTaskState
 from .runner import CaseRunner
-from .serializers import ApiTestPlanSerializer, CaseTestPlanSerializer, CaseTaskSerializer
+from .serializers import ApiTestPlanSerializer, CaseTestPlanSerializer, CaseTaskSerializer, InterfaceTaskSerializer
 
 
 class ApiTestPlanViewSet(viewsets.ModelViewSet):
+    Schema = AutoSchema(manual_fields=[
+        coreapi.Field(name="projectId", required=False, location="query",
+                      schema=coreschema.String(description='项目id'), )
+    ])
+    schema = Schema
     authentication_classes = (JSONWebTokenAuthentication,)
     pagination_class = pagination.LimitOffsetPagination
     serializer_class = ApiTestPlanSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        return ApiTestPlanModel.objects.all()
+        return ApiTestPlanModel.objects.filter(project=self.request.GET.get('projectId'))
 
     def create(self, request, *args, **kwargs):
         """
@@ -66,6 +71,34 @@ class ApiTestPlanViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(api_test_plans)
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)
+
+
+@method_decorator(csrf_exempt, name='get')
+class ApiTask(APIView):
+    """
+    【case task接口】
+    """
+    Schema = AutoSchema(manual_fields=[
+        coreapi.Field(name="ApiTestPlanUid", required=True, location="query",
+                      schema=coreschema.String(description='接口测试计划uid')),
+        coreapi.Field(name="limit", required=True, location="query",
+                      schema=coreschema.String(description='limit')),
+        coreapi.Field(name="offset", required=True, location="query",
+                      schema=coreschema.String(description='offset')),
+    ])
+    schema = Schema
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+        receive_data = request.GET
+        interface_test_plan_uid = receive_data.get('ApiTestPlanUid', None)
+        if not interface_test_plan_uid:
+            return Response({"error": "缺少必要参数caseTestPlanUid"}, status=status.HTTP_400_BAD_REQUEST)
+        pg = LimitOffsetPagination()
+        case_tasks = ApiTestPlanTaskModel.objects.filter(test_plan_uid=interface_test_plan_uid)
+        page_api_tasks = pg.paginate_queryset(queryset=case_tasks, request=request, view=self)
+        case_tasks_serializer = InterfaceTaskSerializer(page_api_tasks, many=True)
+        return Response(case_tasks_serializer.data)
 
 
 @method_decorator(csrf_exempt, name='post')

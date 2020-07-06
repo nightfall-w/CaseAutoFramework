@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
-from testplan.models import ApiTestPlanModel, CaseTestPlanModel, CaseTestPlanTaskModel
+from testplan.models import ApiTestPlanModel, CaseTestPlanModel, CaseTestPlanTaskModel, ApiTestPlanTaskModel
 
 
 class ApiTestPlanSerializer(serializers.ModelSerializer):
@@ -36,5 +36,12 @@ class CaseTestPlanSerializer(serializers.ModelSerializer):
 class CaseTaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = CaseTestPlanTaskModel
+        fields = "__all__"
+        depth = 1
+
+
+class InterfaceTaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApiTestPlanTaskModel
         fields = "__all__"
         depth = 1
