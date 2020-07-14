@@ -50,7 +50,9 @@ class InterfaceTestViewSet(viewsets.ModelViewSet):
         """
         【接收前端页面postman的数据进行处理】
         """
-        serializer = self.get_serializer(data=request.data)
+        request.data['user'] = request.user.username
+        receive_data = request.data
+        serializer = self.get_serializer(data=receive_data)
         inspection = serializer.is_valid(raise_exception=False)
         if not inspection:
             if serializer.errors.get('non_field_errors', None) and serializer.errors['non_field_errors'][
@@ -87,4 +89,4 @@ class InterfaceTestViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         page = self.paginate_queryset(self.get_queryset())
         serializers = InterfaceTestSerializer(page, many=True, fields=('id', 'request_mode', 'addr'))
-        return Response(serializers.data)
+        return Response({"success": True, "data": serializers.data})

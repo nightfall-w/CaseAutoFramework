@@ -77,6 +77,7 @@ class InterfaceTestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = InterfaceHistory
+        # exclude = ["user"]
         fields = '__all__'
         depth = 1
         validators = [
