@@ -71,7 +71,7 @@ class InterfaceTestViewSet(viewsets.ModelViewSet):
                 response = requests_fun(url=interface.get('addr'), headers=headers, data=data)
             elif json.loads(interface.get('urlencoded', '{}')):  # form 表单
                 data = json.loads(interface.get('urlencoded'))
-                response = requests_fun(url=interface.get('addr'), headers=headers, data=data)
+                response = requests_fun(url=interface.get('addr'), headers=headers, params=data)
             elif json.loads(interface.get('raw', '{}')):  # json请求
                 response = requests_fun(url=interface.get('addr'), headers=headers,
                                         data=interface.get('raw').encode("utf-8"))

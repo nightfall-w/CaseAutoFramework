@@ -351,7 +351,7 @@ class ApiRunner:
             response = requests_fun(url=interface.addr, headers=headers, data=data)
         elif json.loads(interface.urlencoded):  # form 表单
             data = json.loads(interface.urlencoded)
-            response = requests_fun(url=interface.addr, headers=headers, data=data)
+            response = requests_fun(url=interface.addr, headers=headers, params=data)
         elif json.loads(interface.raw):  # json请求
             response = requests_fun(url=interface.addr, headers=headers, data=interface.raw.encode("utf-8"))
         else:
