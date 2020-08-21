@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from threading import Thread
@@ -34,11 +35,37 @@ class PathTree(object):
             tree["id"] = self.index
             tree["label"] = os.path.basename(path)
             tree['children'] = [self.path_tree(os.path.join(path, x)) for x in os.listdir(path)]
-        elif not os.path.isdir(path):
+        elif not os.path.isdir(path) and os.path.splitext(path)[1] in json.loads(
+                ConfigParser.get_config('case', 'suffixs')):
             tree["id"] = self.index
             tree["label"] = os.path.basename(path)
             tree['filepath'] = path
         return tree
+
+    def value_is_not_empty(self, value):
+        return value not in ['', None, {}, []]
+
+    def empty_json_data(self, data):
+        if isinstance(data, dict):
+            temp_data = dict()
+            for key, value in data.items():
+                if self.value_is_not_empty(value):
+                    new_value = self.empty_json_data(value)
+                    if self.value_is_not_empty(new_value):
+                        temp_data[key] = new_value
+            return None if not temp_data else temp_data
+
+        elif isinstance(data, list):
+            temp_data = list()
+            for value in data:
+                if self.value_is_not_empty(value):
+                    new_value = self.empty_json_data(value)
+                    if self.value_is_not_empty(new_value):
+                        temp_data.append(new_value)
+            return None if not temp_data else temp_data
+
+        elif self.value_is_not_empty(data):
+            return data
 
 
 class GitTool(APIView):
@@ -139,8 +166,10 @@ class CaseTree(APIView):
                 return JsonResponse({"error": "case:{}不存在".format(case_name)})
         else:
             # 没有指定到case路径 则返回case目录树
-            case_tree = PathTree(case_branch).path_tree(os.path.join(settings.BASE_DIR, 'case_house', case_branch))
-            return JsonResponse({"branch": case_branch, "case_tree": [case_tree]})
+            path_tree_instance = PathTree(case_branch)
+            tree = path_tree_instance.path_tree(os.path.join(settings.BASE_DIR, 'case_house', case_branch))
+            refine_tree = path_tree_instance.empty_json_data(tree)
+            return JsonResponse({"branch": case_branch, "case_tree": [refine_tree]})
 
 
 class CaseViewSet(viewsets.ModelViewSet):

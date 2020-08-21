@@ -8,6 +8,7 @@ from celery_tasks.celery import app
 from testplan.models import CaseTestPlanTaskModel, CaseTestPlanModel, CaseJobModel
 from testplan.runner import ApiRunner, data_drive, CaseRunner
 from utils.job_status_enum import CaseTestPlanTaskState
+from automation.settings import logger
 
 
 @app.task(name="api_testplan_executor")
@@ -40,25 +41,43 @@ def case_test_task_executor(case_task_id):
 
 @app.task(name="case_test_job_executor")
 def case_test_job_executor(case_job_id, project_id, test_plan_uid, task_id):
+    """
+    【case job执行处理器】
+    :param case_job_id: case job的id
+           project_id: 项目id
+           test_plan_uid: 测试计划uid
+           task_id: CaseTestPlanTaskModel模型的id主键
+    """
+    # 根据case testPlan task id获取模型并更新状态为RUNNING
     CaseTestPlanTaskModel.objects.filter(id=task_id).update(state=CaseTestPlanTaskState.RUNNING)
     case_job = CaseJobModel.objects.get(id=case_job_id)
+    # 执行case job(运行case并生成报告)
     CaseRunner.executor(case_job=case_job, project_id=project_id, test_plan_uid=test_plan_uid,
                         task_id=task_id)
+
+    # 因为使用celery进行异步执行case，会出现在同一时刻多个case同时完成时一起修改finish num导致数据出错的问题，因此使用分布式锁保证数据一致性
+
+    # 用testplanid与taskid组成redis锁的key，可以唯一定位一个case testplan
     lock_key = test_plan_uid + str(task_id)
+    # 从redis连接池获取一个连接实例
     r = redis.Redis(connection_pool=RedisPoll().instance)
     while True:
-        if r.setnx(lock_key, 1):
+        if r.setnx(lock_key, 1):    # 只有在key不存在的情况下才能设置成功 条件成立
             try:
+                # 修改已完成数
                 CaseTestPlanTaskModel.objects.filter(id=task_id).update(finish_num=F('finish_num') + 1)
                 case_task = CaseTestPlanTaskModel.objects.get(id=task_id)
                 if case_task.finish_num == case_task.case_job_number:
+                    # 已完成数等于case总数 那整个case test plan全部完成
                     case_task.state = CaseTestPlanTaskState.FINISH
                 case_task.save()
             except Exception as es:
-                print(es)
+                logger.error("Update CaseTestPlanTask finish_num Fail, es:{}, testplan id:{}".format(es, task_id))
             finally:
+                # 为了防止造成死锁  无论成功与否都需要释放锁
                 r.delete(lock_key)
                 break
         else:
+            # 已经被其他celery任务上锁 等待0.5s后重试
             time.sleep(0.5)
             continue

@@ -383,8 +383,16 @@ class ApiRunner:
 
 
 class CaseRunner:
+    """
+    【case的运行管理器】
+    """
     @classmethod
     def distributor(cls, test_plan_task):
+        """
+
+        :param test_plan_task: case测试计划对象
+        :return: 分配结果
+        """
         case_test_plan = CaseTestPlanModel.objects.filter(plan_id=test_plan_task.test_plan_uid).first()
         case_paths = case_test_plan.case_paths
         linux_case_paths = '/'.join(case_paths.split('\\'))
@@ -396,6 +404,14 @@ class CaseRunner:
 
     @classmethod
     def executor(cls, case_job, project_id, test_plan_uid, task_id):
+        """
+        执行器
+        :param case_job:
+        :param project_id:
+        :param test_plan_uid:
+        :param task_id:
+        :return:
+        """
         report_name = case_job.case_path.split('/')[-1].split('.')[0] + '.html'
         report_path = os.path.join(MEDIA_ROOT, 'html-report', str(project_id), test_plan_uid, str(task_id))
         p = subprocess.Popen(

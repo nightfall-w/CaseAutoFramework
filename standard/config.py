@@ -17,7 +17,7 @@ class ConfigParser():
         except KeyError:
             config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'config.conf')
             cf = configparser.ConfigParser()
-            cf.read(config_path, encoding='utf8')  # 注意setting.ini配置文件的路径
+            cf.read(config_path, encoding='utf8')
             value = cf.get(sector, item)
             cls.config_dic[sector][item] = value
         finally:

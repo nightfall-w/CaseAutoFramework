@@ -198,7 +198,7 @@ LOGGING = {
     'handlers': {
         # 默认记录所有日志
         'default': {
-            'level': 'INFO',
+            'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': os.path.join(log_path, 'all-{}.log'.format(time.strftime('%Y-%m-%d'))),
             'maxBytes': 1024 * 1024 * 50,  # 文件大小
