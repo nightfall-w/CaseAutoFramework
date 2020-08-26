@@ -112,7 +112,7 @@ class GitTool(APIView):
             logger.error('切换分支到：{} 失败'.format(branch))
             logger.error(es)
             case_obj = GitCase.objects.get(branch_name=branch)
-            case_obj.status = CaseStatus.DONE.value
+            case_obj.status = CaseStatus.FAILED.value
             case_obj.save()
             return False
         case_obj = GitCase.objects.get(branch_name=branch)

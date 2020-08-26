@@ -188,11 +188,11 @@ class TriggerCasePlan(APIView):
     """
     Schema = AutoSchema(manual_fields=[
         coreapi.Field(name="projectId", required=True, location="form",
-                      schema=coreschema.String(description='项目id')),
+                      schema=coreschema.Integer(description='项目id')),
         coreapi.Field(name="testPlanId", required=True, location="form",
                       schema=coreschema.String(description='接口测试计划uid')),
         coreapi.Field(name="parallel", required=False, location="form",
-                      schema=coreschema.String(description='是否并行执行case,默认False'))
+                      schema=coreschema.Boolean(description='是否并行执行case,默认False'))
     ])
     schema = Schema
     authentication_classes = (JSONWebTokenAuthentication,)

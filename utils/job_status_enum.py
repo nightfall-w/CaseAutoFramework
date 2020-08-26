@@ -14,6 +14,7 @@ class CaseJobState:
     WAITING = "WAITING"
     RUNNING = "RUNNING"
     FINISH = "FINISH"
+    FAILED = "FAILED"
 
 
 class CaseTestPlanTaskState:

@@ -9,13 +9,12 @@ from functools import reduce
 
 import requests
 
-from automation.settings import logger
+from automation.settings import MEDIA_ROOT, logger
 from interface.models import InterfaceJobModel, InterfaceModel, InterfaceCacheModel
 from standard.enum import InterFaceType
 from testplan import operation
 from testplan.models import ApiTestPlanTaskModel, CaseTestPlanModel, CaseJobModel
 from utils.job_status_enum import ApiJobState, ApiTestPlanTaskState, CaseJobState
-from automation.settings import MEDIA_ROOT
 
 
 class cartesian(object):
@@ -386,6 +385,7 @@ class CaseRunner:
     """
     【case的运行管理器】
     """
+
     @classmethod
     def distributor(cls, test_plan_task):
         """
@@ -412,16 +412,25 @@ class CaseRunner:
         :param task_id:
         :return:
         """
+        case_job.state = CaseJobState.RUNNING
+        case_job.save()
         report_name = case_job.case_path.split('/')[-1].split('.')[0] + '.html'
         report_path = os.path.join(MEDIA_ROOT, 'html-report', str(project_id), test_plan_uid, str(task_id))
-        p = subprocess.Popen(
-            'pytest {} -vv -s --html={} --self-contained-html'.format(case_job.case_path,
-                                                                      os.path.join(report_path, report_name)),
-            shell=True, stdout=subprocess.PIPE)
-        out = p.stdout
-        case_job.log = out.read().decode('utf-8')
-        case_job.report_path = '/media/html-report/{}/{}/{}/{}'.format(project_id, test_plan_uid, task_id, report_name)
-        result = case_job.log.split('\r\n')[-2].strip('=').strip()
-        case_job.result = result
-        case_job.state = CaseJobState.FINISH
-        case_job.save()
+        try:
+            p = subprocess.Popen(
+                'pytest {} -vv -s --html={} --self-contained-html'.format(case_job.case_path,
+                                                                          os.path.join(report_path, report_name)),
+                shell=True, stdout=subprocess.PIPE)
+            out = p.stdout
+            read_data = out.read().decode("utf-8")
+            case_job.log = read_data
+            case_job.report_path = '/media/html-report/{}/{}/{}/{}'.format(project_id, test_plan_uid, task_id,
+                                                                           report_name)
+            result = case_job.log.split('\n')[-2].strip('=').strip()
+            case_job.result = result
+            case_job.state = CaseJobState.FINISH
+            case_job.save()
+        except Exception as es:
+            logger.error("case job excepted:{}".format(es))
+            case_job.state = CaseJobState.FAILED
+            case_job.save()
