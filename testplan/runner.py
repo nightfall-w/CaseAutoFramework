@@ -1,4 +1,4 @@
-# -*- coding=utf-8 -*-
+# -*- coding:utf-8 -*-
 import itertools
 import json
 import os
@@ -422,7 +422,7 @@ class CaseRunner:
                                                                           os.path.join(report_path, report_name)),
                 shell=True, stdout=subprocess.PIPE)
             out = p.stdout
-            read_data = out.read().decode("utf-8")
+            read_data = out.read().decode("utf-8", "ignore")
             case_job.log = read_data
             case_job.report_path = '/media/html-report/{}/{}/{}/{}'.format(project_id, test_plan_uid, task_id,
                                                                            report_name)
@@ -430,7 +430,9 @@ class CaseRunner:
             case_job.result = result
             case_job.state = CaseJobState.FINISH
             case_job.save()
+            return True
         except Exception as es:
             logger.error("case job excepted:{}".format(es))
             case_job.state = CaseJobState.FAILED
             case_job.save()
+            return False
