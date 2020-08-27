@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'dwebsocket',
     'django_celery_beat',
     'corsheaders',
     'case',
@@ -51,6 +52,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+WEBSOCKET_ACCEPT_ALL = True
 ROOT_URLCONF = 'automation.urls'
 
 TEMPLATES = [
