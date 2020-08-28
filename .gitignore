@@ -136,6 +136,6 @@ dmypy.json
 .pyre/
 
 # Case
-case_house
+case_house/
 
 media/html-report/
