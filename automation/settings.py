@@ -87,11 +87,14 @@ DATABASES = {
     }
 }
 
+# REDIS SERVER
+REDIS_SERVER = 'localhost'
+
 # CELERY STUFF
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers.DatabaseScheduler'
-BROKER_URL = 'amqp://admin:admin@192.168.21.175:5672/test'
-CELERY_BROKER_URL = 'amqp://admin:admin@192.168.21.175:5672/test'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/2'
+BROKER_URL = 'amqp://admin:admin@192.168.21.175:5672//'
+CELERY_BROKER_URL = 'amqp://admin:admin@192.168.21.175:5672//'
+CELERY_RESULT_BACKEND = 'redis://%s:6379/2' % REDIS_SERVER
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_ENABLE_UTC = False
 CELERY_TIMEZONE = 'Asia/Shanghai'
@@ -155,7 +158,7 @@ JWT_AUTH = {
 ESSION_SAVE_EVERY_REQUEST = False  # 如果设置为True,django为每次request请求都保存session的内容，默认为False
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 3  # 设置SESSION的过期时间，单位是秒，默认是两周
 SESSION_ENGINE = 'redis_sessions.session'  # 使用redis作为session存储介质
-SESSION_REDIS_HOST = 'localhost'
+SESSION_REDIS_HOST = REDIS_SERVER
 SESSION_REDIS_PORT = 6379
 SESSION_REDIS_DB = 4  # 选择存储槽
 SESSION_REDIS_PASSWORD = ''

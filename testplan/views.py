@@ -6,6 +6,7 @@ import coreschema
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
+from dwebsocket import accept_websocket
 from rest_framework import viewsets, pagination, permissions, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
@@ -19,6 +20,7 @@ from interface.models import InterfaceModel
 from testplan.models import ApiTestPlanModel, ApiTestPlanTaskModel, CaseTestPlanModel, CaseTestPlanTaskModel, \
     CaseJobModel
 from utils.job_status_enum import ApiTestPlanTaskState, CaseTestPlanTaskState
+from .result import adapter
 from .runner import CaseRunner
 from .serializers import ApiTestPlanSerializer, CaseTestPlanSerializer, CaseTaskSerializer, InterfaceTaskSerializer
 
@@ -226,8 +228,29 @@ class TriggerCasePlan(APIView):
         else:
             '''串行执行'''
             case_test_task_executor.delay(case_test_plan_task.id)
-        return Response({"success": True})
+        return Response({"success": True, "data": "测试用例计划已经成功触发"})
 
+
+class TestPlanResult(APIView):
+    """
+    获取case testplan下task的整体执行结果
+    """
+
+    @method_decorator(accept_websocket)
+    def get(self, request):
+        if request.is_websocket():
+            # 处理web socket请求
+            while True:
+                # 获取ws请求数据
+                msg = request.websocket.wait()
+                receive_data = json.loads(msg, encoding="utf-8")
+                send_msg = adapter(receive_data)
+                request.websocket.send(json.dumps(send_msg))
+        else:
+            # 处理http请求
+            receive_data = json.loads(request.body, encoding="utf-8")
+            send_msg = adapter(receive_data)
+            return Response(send_msg)
 
 @method_decorator(csrf_exempt, name='get')
 class test_return_file(APIView):

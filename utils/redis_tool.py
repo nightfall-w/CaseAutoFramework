@@ -1,4 +1,5 @@
 import redis
+from automation.settings import REDIS_SERVER
 
 
 def singleton(cls):
@@ -15,4 +16,4 @@ def singleton(cls):
 @singleton
 class RedisPoll:
     def __init__(self):
-        self.instance = redis.ConnectionPool(host='127.0.0.1', port=6379, max_connections=30, decode_responses=True)
+        self.instance = redis.ConnectionPool(host=REDIS_SERVER, port=6379, max_connections=30, decode_responses=True)
