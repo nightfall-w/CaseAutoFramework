@@ -36,8 +36,14 @@ def case_test_task_executor(case_task_id):
     for index, case_job in enumerate(case_jobs):
         CaseRunner.executor(case_job=case_job, project_id=case_test_plan.project, test_plan_uid=case_test_plan.plan_id,
                             task_id=case_task_id)
-        CaseTestPlanTaskModel.objects.filter(id=case_task_id).update(finish_num=index + 1)
-    CaseTestPlanTaskModel.objects.filter(id=case_task_id).update(state=CaseTestPlanTaskState.FINISH)
+        case_task = CaseTestPlanTaskModel.objects.filter(id=case_task_id).first()
+        case_task.finish_num = case_task.finish_num + 1
+        case_task.save()
+    case_task = CaseTestPlanTaskModel.objects.get(id=case_task_id)
+    used_time = case_task.update_data - case_task.create_data
+    print(used_time)
+    case_task.state = CaseTestPlanTaskState.FINISH
+    case_task.used_time = used_time.total_seconds
     return True
 
 
@@ -66,14 +72,15 @@ def case_test_job_executor(case_job_id, project_id, test_plan_uid, task_id):
         if r.setnx(lock_key, 1):  # 只有在key不存在的情况下才能设置成功 条件成立
             try:
                 # 修改已完成数
-                CaseTestPlanTaskModel.objects.filter(id=task_id).update(finish_num=F('finish_num') + 1)
                 case_task = CaseTestPlanTaskModel.objects.get(id=task_id)
+                case_task.finish_num = case_task.finish_num + 1
+                case_task.save()
                 if case_task.finish_num == case_task.case_job_number:
                     # 已完成数等于case总数 那整个case test plan全部完成
                     case_task.state = CaseTestPlanTaskState.FINISH
                     case_task.save()
-                    use_time = case_task.update_data - case_task.create_data
-                    case_task.used_time = use_time.total_seconds()
+                    used_time = case_task.update_data - case_task.create_data
+                    case_task.used_time = used_time.total_seconds()
                     case_task.save()
             except Exception as es:
                 logger.error("Update CaseTestPlanTask finish_num Fail, es:{}, testplan id:{}".format(es, task_id))
@@ -83,6 +90,6 @@ def case_test_job_executor(case_job_id, project_id, test_plan_uid, task_id):
                 break
         else:
             # 已经被其他celery任务上锁 等待0.5s后重试
-            time.sleep(0.5)
+            time.sleep(0.2)
             continue
     return result

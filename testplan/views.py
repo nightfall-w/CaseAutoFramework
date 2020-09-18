@@ -252,6 +252,7 @@ class TestPlanResult(APIView):
             send_msg = adapter(receive_data)
             return Response(send_msg)
 
+
 @method_decorator(csrf_exempt, name='get')
 class test_return_file(APIView):
     def get(self, request):
