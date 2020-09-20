@@ -39,11 +39,11 @@ def case_test_task_executor(case_task_id):
         case_task = CaseTestPlanTaskModel.objects.filter(id=case_task_id).first()
         case_task.finish_num = case_task.finish_num + 1
         case_task.save()
-    case_task = CaseTestPlanTaskModel.objects.get(id=case_task_id)
+    case_task = CaseTestPlanTaskModel.objects.filter(id=case_task_id).first()
     used_time = case_task.update_data - case_task.create_data
-    print(used_time)
     case_task.state = CaseTestPlanTaskState.FINISH
-    case_task.used_time = used_time.total_seconds
+    case_task.used_time = used_time.total_seconds()
+    case_task.save()
     return True
 
 

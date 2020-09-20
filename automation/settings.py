@@ -92,8 +92,8 @@ REDIS_SERVER = 'localhost'
 
 # CELERY STUFF
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers.DatabaseScheduler'
-BROKER_URL = 'amqp://admin:admin@192.168.21.175:5672//'
-CELERY_BROKER_URL = 'amqp://admin:admin@192.168.21.175:5672//'
+BROKER_URL = 'amqp://admin:admin@127.0.0.1:5672//'
+CELERY_BROKER_URL = 'amqp://admin:admin@127.0.0.1:5672//'
 CELERY_RESULT_BACKEND = 'redis://%s:6379/2' % REDIS_SERVER
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_ENABLE_UTC = False
