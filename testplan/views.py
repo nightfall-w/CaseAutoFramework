@@ -1,9 +1,10 @@
 import json
 import uuid
+import time
 
 import coreapi
 import coreschema
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from dwebsocket import accept_websocket
@@ -231,26 +232,44 @@ class TriggerCasePlan(APIView):
         return Response({"success": True, "data": "测试用例计划已经成功触发"})
 
 
-class TestPlanResult(APIView):
-    """
-    获取case testplan下task的整体执行结果
-    """
-
-    @method_decorator(accept_websocket)
-    def get(self, request):
-        if request.is_websocket():
-            # 处理web socket请求
-            while True:
-                # 获取ws请求数据
-                msg = request.websocket.wait()
-                receive_data = json.loads(msg, encoding="utf-8")
-                send_msg = adapter(receive_data)
-                request.websocket.send(json.dumps(send_msg))
-        else:
-            # 处理http请求
-            receive_data = json.loads(request.body, encoding="utf-8")
-            send_msg = adapter(receive_data)
-            return Response(send_msg)
+# @accept_websocket
+# @csrf_exempt
+# def TestPlanResult(request):
+#     if request.is_websocket():
+#         disconnected = False
+#         # 处理web socket请求
+#         while True:
+#             try:
+#                 msg = request.websocket.read()  # 读取数据
+#             except EOFError:
+#                 disconnected = True
+#                 logger.info("客户端主动断开链接")
+#                 break
+#             if not msg:
+#                 continue
+#             else:
+#                 break
+#         if not disconnected:
+#             while True:
+#                 try:
+#                     receive_data = json.loads(msg, encoding="utf-8")
+#                     send_msg = adapter(receive_data)
+#                     request.websocket.send(json.dumps(send_msg))
+#                 except (json.JSONDecodeError, TypeError, AttributeError) as es:
+#                     logger.error(es)
+#                     send_msg = {"success": False, "error": str(es)}
+#                     request.websocket.send(json.dumps(send_msg))
+#                 time.sleep(1)
+#     else:
+#         # 处理http请求
+#         try:
+#             receive_data = json.loads(request.body, encoding="utf-8")
+#             send_msg = adapter(receive_data)
+#             return HttpResponse(json.dumps(send_msg), content_type='application/json')
+#         except (json.JSONDecodeError, TypeError, AttributeError) as es:
+#             logger.error(es)
+#             send_msg = {"success": False, "error": str(es)}
+#             return HttpResponse(json.dumps(send_msg), content_type='application/json')
 
 
 @method_decorator(csrf_exempt, name='get')

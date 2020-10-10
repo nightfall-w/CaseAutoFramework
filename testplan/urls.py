@@ -8,5 +8,5 @@ urlpatterns = [
     re_path('^test_return_file/$', test_return_file.as_view(), name='test_return_file'),
     re_path('^caseTask/$', CaseTask.as_view(), name='CaseTask'),
     re_path('^apiTask/$', ApiTask.as_view(), name='ApiTask'),
-    re_path('^result/$', TestPlanResult.as_view(), name='testPlanResult'),
+    # re_path('^result/$', TestPlanResult, name='testPlanResult'),
 ]

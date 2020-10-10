@@ -1,39 +1,8 @@
 # -*- coding:utf-8 -*-
-import json
-from automation.settings import logger
 
-from dwebsocket.decorators import accept_websocket
-
-
-@accept_websocket
-def case_report(request):
-    if request.is_websocket():
-        # websocket请求处理
-        while True:
-            try:
-                msg = request.websocket.wait()
-                print(str(msg, encoding="utf-8"))
-                request.websocket.send(json.dumps(eval(msg)))
-            except Exception as es:
-                logger.error(es)
-                continue
-    else:
-        # TODO http请求处理
-        pass
-
-
-@accept_websocket
-def interface_report(request):
-    if request.is_websocket():
-        # websocket请求处理
-        while True:
-            try:
-                msg = request.websocket.wait()
-                print(str(msg, encoding="utf-8"))
-                request.websocket.send(json.dumps(eval(msg)))
-            except Exception as es:
-                logger.error(es)
-                continue
-    else:
-        # TODO http请求处理
-        pass
+def send_report_mail(request):
+    now_time = datetime.datetime.now()
+    now_strptime = datetime.datetime.strftime(now_time, '%Y-%m-%d %H:%M:%S')
+    send_case_report_mail('rimuli_w@163.com', now_strptime, "王保军", "18901942952", "wangbaojun@flashhold.com",
+                          "Quicktron", "你好")
+    return JsonResponse({"success": True, "data": "send email success"})
