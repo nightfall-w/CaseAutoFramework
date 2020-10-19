@@ -1,7 +1,6 @@
 import json
 import time
 from channels.generic.websocket import WebsocketConsumer
-# from channels.generic.websocket import AsyncWebsocketConsumer
 
 from testplan.result import adapter
 
@@ -17,7 +16,7 @@ class ResultConsumer(WebsocketConsumer):
     def receive(self, text_data):
         try:
             text_data_json = json.loads(text_data)
-        except json.decoder.JSONDecodeError as es:
+        except json.decoder.JSONDecodeError:
             self.send(text_data=json.dumps({"success": False, "error": "Illegal data type"}))
             return False
         while True:

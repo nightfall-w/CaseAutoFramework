@@ -363,17 +363,22 @@ class ApiRunner:
         interfaceJobs = InterfaceJobModel.objects.filter(test_plan_id=self.test_plan_id,
                                                          api_test_plan_task_id=self.test_plan_task_id)
         start_time = time.time()
-        ApiTestPlanTaskModel.objects.filter(test_plan_uid=self.test_plan_id, id=self.test_plan_task_id).update(
-            state=ApiTestPlanTaskState.RUNNING)
+        # ApiTestPlanTaskModel.objects.filter(test_plan_uid=self.test_plan_id, id=self.test_plan_task_id).update(
+        #     state=ApiTestPlanTaskState.RUNNING)
+        test_plan_task = ApiTestPlanTaskModel.objects.filter(test_plan_uid=self.test_plan_id,
+                                                             id=self.test_plan_task_id).first()
+        test_plan_task.state = ApiTestPlanTaskState.RUNNING
+        test_plan_task.save()
         for interfaceJob in interfaceJobs:
             self.processing_plant(interfaceJob)
-            upInterfaces = InterfaceJobModel.objects.get(id=interfaceJob.id)
-            if upInterfaces.state == ApiJobState.SUCCESS:
-                test_plan_task = ApiTestPlanTaskModel.objects.get(id=self.test_plan_task_id)
+            # upInterfaces = InterfaceJobModel.objects.get(id=interfaceJob.id)
+            interfaceJob.refresh_from_db()  # 载入字段更新过后的对象或查询集 避免拿到缓存在内存的老数据
+            test_plan_task.refresh_from_db()
+            # if upInterfaces.state == ApiJobState.SUCCESS:
+            if interfaceJob.state == ApiJobState.SUCCESS:
                 test_plan_task.success_num = test_plan_task.success_num + 1
                 test_plan_task.save()
             else:
-                test_plan_task = ApiTestPlanTaskModel.objects.get(id=self.test_plan_task_id)
                 test_plan_task.failed_num = test_plan_task.failed_num + 1
                 test_plan_task.save()
         used_time = time.time() - start_time
