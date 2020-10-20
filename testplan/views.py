@@ -1,13 +1,11 @@
 import json
 import uuid
-import time
 
 import coreapi
 import coreschema
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from dwebsocket import accept_websocket
 from rest_framework import viewsets, pagination, permissions, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
