@@ -1,4 +1,10 @@
 # -*- coding:utf-8 -*-
+import datetime
+
+from django.http import JsonResponse
+
+from report.email import send_case_report_mail
+
 
 def send_report_mail(request):
     now_time = datetime.datetime.now()
