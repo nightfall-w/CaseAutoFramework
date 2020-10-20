@@ -7,7 +7,7 @@ class ApiTestPlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = ApiTestPlanModel
         exclude = ['create_data', 'update_data']
-        extra_kwargs = {'plan_id': {'required': False}}
+        extra_kwargs = {'plan_id': {'required': False}, 'description': {'required': False}}
         depth = 1
         validators = [
             UniqueTogetherValidator(
@@ -22,7 +22,7 @@ class CaseTestPlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = CaseTestPlanModel
         exclude = ['create_data', 'update_data']
-        extra_kwargs = {'plan_id': {'required': False}}
+        extra_kwargs = {'plan_id': {'required': False}, 'description': {'required': False}}
         depth = 1
         validators = [
             UniqueTogetherValidator(
