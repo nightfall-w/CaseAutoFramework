@@ -9,6 +9,7 @@ class ApiTestPlanModel(models.Model):
     接口测试计划模型
     """
     name = models.CharField(verbose_name="计划名称", max_length=30, null=False, help_text="测试计划名")
+    description = models.TextField(verbose_name="描述", null=True, help_text="描述说明")
     plan_id = models.CharField(verbose_name="计划id", max_length=50, null=False, help_text="计划编号")
     interfaceIds = models.CharField(verbose_name="api id 集合", help_text="api id 集合", null=False, max_length=2000)
     project = models.IntegerField(verbose_name="项目id", null=False, help_text="项目id")

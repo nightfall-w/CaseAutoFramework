@@ -21,7 +21,6 @@ from interface.models import InterfaceModel
 from testplan.models import ApiTestPlanModel, ApiTestPlanTaskModel, CaseTestPlanModel, CaseTestPlanTaskModel, \
     CaseJobModel
 from utils.job_status_enum import ApiTestPlanTaskState, CaseTestPlanTaskState
-from .result import adapter
 from .runner import CaseRunner
 from .serializers import ApiTestPlanSerializer, CaseTestPlanSerializer, CaseTaskSerializer, InterfaceTaskSerializer
 
@@ -48,6 +47,7 @@ class ApiTestPlanViewSet(viewsets.ModelViewSet):
             projectId = request.data.get('project', None)
             interfaceIds = json.loads(request.data.get('interfaceIds', "[]"))
             test_plan_name = request.data.get("name", None)
+            discription = request.data.get('discription', '')
         except Exception as es:
             logger.error(es)
             return Response({"error": "不符合格式的接口列表"})
@@ -62,7 +62,7 @@ class ApiTestPlanViewSet(viewsets.ModelViewSet):
             if not interfaceObj:
                 return Response({"error": "接口id为{}的api不存在".format(id)})
         plan_id = uuid.uuid4()
-        ApiTestPlanModel.objects.create(name=test_plan_name, plan_id=plan_id,
+        ApiTestPlanModel.objects.create(name=test_plan_name, plan_id=plan_id, discription=discription,
                                         project=int(projectId),
                                         interfaceIds=json.dumps(interfaceIds),
                                         create_user=request.user, )
@@ -230,46 +230,6 @@ class TriggerCasePlan(APIView):
             '''串行执行'''
             case_test_task_executor.delay(case_test_plan_task.id)
         return Response({"success": True, "data": "测试用例计划已经成功触发"})
-
-
-# @accept_websocket
-# @csrf_exempt
-# def TestPlanResult(request):
-#     if request.is_websocket():
-#         disconnected = False
-#         # 处理web socket请求
-#         while True:
-#             try:
-#                 msg = request.websocket.read()  # 读取数据
-#             except EOFError:
-#                 disconnected = True
-#                 logger.info("客户端主动断开链接")
-#                 break
-#             if not msg:
-#                 continue
-#             else:
-#                 break
-#         if not disconnected:
-#             while True:
-#                 try:
-#                     receive_data = json.loads(msg, encoding="utf-8")
-#                     send_msg = adapter(receive_data)
-#                     request.websocket.send(json.dumps(send_msg))
-#                 except (json.JSONDecodeError, TypeError, AttributeError) as es:
-#                     logger.error(es)
-#                     send_msg = {"success": False, "error": str(es)}
-#                     request.websocket.send(json.dumps(send_msg))
-#                 time.sleep(1)
-#     else:
-#         # 处理http请求
-#         try:
-#             receive_data = json.loads(request.body, encoding="utf-8")
-#             send_msg = adapter(receive_data)
-#             return HttpResponse(json.dumps(send_msg), content_type='application/json')
-#         except (json.JSONDecodeError, TypeError, AttributeError) as es:
-#             logger.error(es)
-#             send_msg = {"success": False, "error": str(es)}
-#             return HttpResponse(json.dumps(send_msg), content_type='application/json')
 
 
 @method_decorator(csrf_exempt, name='get')
