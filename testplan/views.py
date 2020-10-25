@@ -45,7 +45,7 @@ class ApiTestPlanViewSet(viewsets.ModelViewSet):
             projectId = request.data.get('project', None)
             interfaceIds = json.loads(request.data.get('interfaceIds', "[]"))
             test_plan_name = request.data.get("name", None)
-            discription = request.data.get('discription', '')
+            description = request.data.get('description', '')
         except Exception as es:
             logger.error(es)
             return Response({"error": "不符合格式的接口列表"})
@@ -55,12 +55,12 @@ class ApiTestPlanViewSet(viewsets.ModelViewSet):
             return Response({"error": "测试计划名不能为空"})
         if not interfaceIds:
             return Response({"error": "接口id未提供"})
-        for id in interfaceIds:
-            interfaceObj = InterfaceModel.objects.filter(id=id).first()
+        for _id in interfaceIds:
+            interfaceObj = InterfaceModel.objects.filter(id=_id).first()
             if not interfaceObj:
-                return Response({"error": "接口id为{}的api不存在".format(id)})
+                return Response({"error": "接口id为{}的api不存在".format(_id)})
         plan_id = uuid.uuid4()
-        ApiTestPlanModel.objects.create(name=test_plan_name, plan_id=plan_id, discription=discription,
+        ApiTestPlanModel.objects.create(name=test_plan_name, plan_id=plan_id, description=description,
                                         project=int(projectId),
                                         interfaceIds=json.dumps(interfaceIds),
                                         create_user=request.user, )
