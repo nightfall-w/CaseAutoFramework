@@ -1,8 +1,11 @@
 import json
 
 import requests
+import coreapi
+import coreschema
 from rest_framework import viewsets, pagination, permissions, status
 from rest_framework.response import Response
+from rest_framework.schemas import AutoSchema
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from .models import InterfaceModel, InterfaceHistory
@@ -10,13 +13,18 @@ from .serializers import InterfaceSerializer, InterfaceTestSerializer
 
 
 class InterfaceViewSet(viewsets.ModelViewSet):
+    Schema = AutoSchema(manual_fields=[
+        coreapi.Field(name="projectId", required=False, location="query",
+                      schema=coreschema.Integer(description='项目id'), )
+    ])
+    schema = Schema
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = InterfaceSerializer
     pagination_class = pagination.LimitOffsetPagination
 
     def get_queryset(self):
-        return InterfaceModel.objects.all()
+        return InterfaceModel.objects.filter(project=self.request.GET.get('projectId'))
 
     def list(self, request, *args, **kwargs):
         """

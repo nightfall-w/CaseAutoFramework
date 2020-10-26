@@ -26,7 +26,7 @@ from .serializers import ApiTestPlanSerializer, CaseTestPlanSerializer, CaseTask
 class ApiTestPlanViewSet(viewsets.ModelViewSet):
     Schema = AutoSchema(manual_fields=[
         coreapi.Field(name="projectId", required=False, location="query",
-                      schema=coreschema.String(description='项目id'), )
+                      schema=coreschema.Integer(description='项目id'), )
     ])
     schema = Schema
     authentication_classes = (JSONWebTokenAuthentication,)
@@ -109,7 +109,7 @@ class TriggerApiPlan(APIView):
     """
     Schema = AutoSchema(manual_fields=[
         coreapi.Field(name="projectId", required=True, location="form",
-                      schema=coreschema.String(description='项目id')),
+                      schema=coreschema.Integer(description='项目id')),
         coreapi.Field(name="testPlanId", required=True, location="form",
                       schema=coreschema.String(description='接口测试计划uid'))
     ])
@@ -142,7 +142,7 @@ class CaseTestPlanViewSet(viewsets.ModelViewSet):
     """
     Schema = AutoSchema(manual_fields=[
         coreapi.Field(name="projectId", required=False, location="query",
-                      schema=coreschema.String(description='项目id'), )
+                      schema=coreschema.Integer(description='项目id'), )
     ])
     schema = Schema
     authentication_classes = (JSONWebTokenAuthentication,)
@@ -163,9 +163,9 @@ class CaseTask(APIView):
         coreapi.Field(name="caseTestPlanUid", required=True, location="query",
                       schema=coreschema.String(description='case测试计划uid')),
         coreapi.Field(name="limit", required=True, location="query",
-                      schema=coreschema.String(description='limit')),
+                      schema=coreschema.Integer(description='limit')),
         coreapi.Field(name="offset", required=True, location="query",
-                      schema=coreschema.String(description='offset')),
+                      schema=coreschema.Integer(description='offset')),
     ])
     schema = Schema
     permission_classes = (permissions.IsAuthenticated,)
