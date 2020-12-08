@@ -27,6 +27,7 @@ class PathTree(object):
     def __init__(self, branch):
         self.index = 0
         self.branch = branch
+        self.temp = len(os.path.join(settings.BASE_DIR, 'case_house'))
 
     def path_tree(self, path):
         tree = dict()
@@ -39,7 +40,7 @@ class PathTree(object):
                 ConfigParser.get_config('case', 'suffixs')):
             tree["id"] = self.index
             tree["label"] = os.path.basename(path)
-            tree['filepath'] = path
+            tree['filepath'] = path[self.temp + 1:]
         return tree
 
     def value_is_not_empty(self, value):
@@ -83,7 +84,6 @@ class GitTool(APIView):
         """
         拉取代码实操
         """
-        author = ''
         try:
             logger.info('开始从远端拉取case')
             case_obj = GitCase.objects.filter(branch_name=branch).first()
@@ -91,7 +91,7 @@ class GitTool(APIView):
                 case_obj.status = CaseStatus.PULLING.value
                 case_obj.save()
             else:
-                GitCase.objects.create(lester_user=author, branch_name=branch, status=CaseStatus.PULLING.value)
+                GitCase.objects.create(branch_name=branch, status=CaseStatus.PULLING.value)
             if not os.path.exists(os.path.join(branch_path, '.git')):
                 git.Repo.clone_from(case_address, branch_path)
             else:
@@ -157,12 +157,12 @@ class CaseTree(APIView):
         if case_path:
             # 有指定文件 表示要获取case详情
             try:
-                with open(os.path.join(settings.BASE_DIR, 'case_house', case_branch, case_path), 'r',
+                with open(os.path.join(settings.BASE_DIR, 'case_house', case_path), 'r',
                           encoding='utf-8') as f:
                     case_data = f.read()
                     return HttpResponse(case_data, content_type='text/plain')
             except FileNotFoundError as es:
-                logger.error(es)
+                logger.error(str(es))
                 return JsonResponse({"error": "case:{}不存在".format(case_name)})
         else:
             # 没有指定到case路径 则返回case目录树

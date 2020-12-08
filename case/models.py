@@ -3,7 +3,7 @@ from django.db import models
 
 # Create your models here.
 class GitCase(models.Model):
-    lester_user = models.CharField(max_length=25, verbose_name="最后提交用户", help_text="上一次提交的用户")
+    lester_user = models.CharField(max_length=25, verbose_name="最后提交用户", help_text="上一次提交的用户", default='')
     branch_name = models.CharField(max_length=20, verbose_name="当前分支", help_text="分支名称")
     status = models.CharField(max_length=10, verbose_name="case状态", help_text="状态")
     lester_time = models.DateTimeField(verbose_name="上次更新时间", auto_now=True, help_text="上一次提交时间")

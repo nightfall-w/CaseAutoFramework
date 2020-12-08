@@ -228,11 +228,3 @@ class TriggerCasePlan(APIView):
             '''串行执行'''
             case_test_task_executor.delay(case_test_plan_task.id)
         return Response({"success": True, "data": "测试用例计划已经成功触发"})
-
-
-@method_decorator(csrf_exempt, name='get')
-class test_return_file(APIView):
-    def get(self, request):
-        with open('case_house/feature/wcs_dingTalk/dingTalk.py', 'r', encoding='utf-8') as f:
-            data = f.read()
-            return HttpResponse(data, content_type='text/plain')
