@@ -37,11 +37,11 @@ def case_test_task_executor(case_task_id):
         CaseRunner.executor(case_job=case_job, project_id=case_test_plan.project, test_plan_uid=case_test_plan.plan_id,
                             task_id=case_task_id)
         # case_task = CaseTestPlanTaskModel.objects.filter(id=case_task_id).first()
-        case_task.rerefresh_from_db()
+        case_task.refresh_from_db()
         case_task.finish_num = case_task.finish_num + 1
         case_task.save()
     # case_task = CaseTestPlanTaskModel.objects.filter(id=case_task_id).first()
-    case_task.rerefresh_from_db()
+    case_task.refresh_from_db()
     used_time = case_task.update_data - case_task.create_data
     case_task.state = CaseTestPlanTaskState.FINISH
     case_task.used_time = used_time.total_seconds()

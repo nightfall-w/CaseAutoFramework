@@ -8,6 +8,7 @@ import time
 from functools import reduce
 
 import requests
+from django.conf import settings
 
 from automation.settings import MEDIA_ROOT, logger
 from interface.models import InterfaceJobModel, InterfaceModel, InterfaceCacheModel
@@ -25,7 +26,7 @@ class cartesian(object):
     def __init__(self):
         self._data_list = list()
 
-    def add_data(self, data=list()):  # 添加生成笛卡尔积的数据列表
+    def add_data(self, data=[]):  # 添加生成笛卡尔积的数据列表
         self._data_list.append(data)
 
     def build(self):  # 计算笛卡尔积
@@ -423,8 +424,9 @@ class CaseRunner:
         report_path = os.path.join(MEDIA_ROOT, 'html-report', str(project_id), test_plan_uid, str(task_id))
         try:
             p = subprocess.Popen(
-                'pytest {} -vv -s --html={} --self-contained-html'.format(case_job.case_path,
-                                                                          os.path.join(report_path, report_name)),
+                'pytest {} -vv -s --html={} --self-contained-html'.format(
+                    os.path.join(settings.BASE_DIR, 'case_house', case_job.case_path),
+                    os.path.join(report_path, report_name)),
                 shell=True, stdout=subprocess.PIPE)
             out = p.stdout
             read_data = out.read().decode("utf-8", "ignore")
