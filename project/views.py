@@ -12,7 +12,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     pagination_class = pagination.LimitOffsetPagination
 
     def get_queryset(self):
-        return ProjectModel.objects.all()
+        return ProjectModel.objects.all().order_by("-id")
 
     def list(self, request, *args, **kwargs):
         projects = self.get_queryset()
