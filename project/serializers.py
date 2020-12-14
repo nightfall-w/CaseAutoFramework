@@ -13,7 +13,9 @@ class ProjectSerializer(serializers.ModelSerializer):
         exclude = ['create_time', 'update_time']
         read_only_fields = ["id", "create_time", "update_time", "env_dict"]
         extra_kwargs = {
-            "env_variable": {"write_only": True}
+            "env_variable": {"write_only": True},
+            "create_by": {'required': False},
+            "update_by": {'required': False}
         }
         depth = 1
 
