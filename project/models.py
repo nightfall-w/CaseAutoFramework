@@ -1,5 +1,5 @@
 from django.db import models
-from standard.model import JSONField
+from django_jsonfield_backport.models import JSONField
 
 
 class ProjectModel(models.Model):

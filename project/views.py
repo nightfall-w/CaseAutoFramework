@@ -1,4 +1,5 @@
-from rest_framework import viewsets, pagination, permissions
+from rest_framework import viewsets, pagination, status, permissions
+from rest_framework.response import Response
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from .serializers import ProjectSerializer
@@ -19,3 +20,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(projects)
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = ProjectModel.objects.get(id=kwargs.get('pk'))
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)

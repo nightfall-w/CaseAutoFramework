@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'channels',
     'django_celery_beat',
     'corsheaders',
+    'django_jsonfield_backport',
     'case',
     'interface',
     'project',
