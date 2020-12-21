@@ -8,23 +8,20 @@ from interface.models import InterfaceModel, InterfaceHistory
 
 
 class InterfaceSerializer(serializers.ModelSerializer):
-    headers = serializers.CharField(default='{}', help_text="请求头", required=False,
-                                    max_length=2000)
-    formData = serializers.CharField(default='{}', help_text="表单数据包括文件", required=False,
-                                     max_length=2000)
-    urlencoded = serializers.CharField(default='{}', required=False,
-                                       max_length=2000,
-                                       help_text="url参数params,数据转换为键值对，&分隔后用?拼接在url后面")
-    raw = serializers.CharField(default='{}', max_length=2000, required=False,
-                                help_text="可以上传任意格式的文本，可以上传text、json、xml、html等")
-    asserts = serializers.CharField(default='[]', help_text="断言", max_length=2000, required=False)
-    parameters = serializers.CharField(default='{}', help_text="参数集", max_length=2000, required=False)
-    extract = serializers.CharField(default='[]', help_text="出参", max_length=2000, required=False)
 
     class Meta:
         model = InterfaceModel
         fields = '__all__'
         depth = 1
+        extra_kwargs = {
+            "headers": {'required': False},
+            "formData": {'required': False},
+            "urlencoded": {'required': False},
+            "raw": {'required': False},
+            "asserts": {'required': False},
+            "parameters": {'required': False},
+            "extract": {'required': False}
+        }
         validators = [
             UniqueTogetherValidator(
                 queryset=InterfaceModel.objects.all(),
