@@ -13,6 +13,7 @@ class InterfaceModel(models.Model):
     addr = models.CharField(verbose_name="接口地址", null=False, max_length=1000, help_text="接口地址")
     request_mode = models.CharField(verbose_name="请求方式", choices=MODE_LIST, max_length=8,
                                     help_text="请求方式")
+    protocol = models.CharField(verbose_name="协议", max_length=5, help_text="请求协议")
     headers = JSONField(verbose_name="请求头", null=True, default=dict, help_text="请求头")
     formData = JSONField(verbose_name="formData", null=True, default=dict, help_text="表单数据包括文件")
     urlencoded = JSONField(verbose_name="x-www-form-urlencoded", null=True, default=dict,
