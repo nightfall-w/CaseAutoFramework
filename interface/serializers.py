@@ -8,7 +8,6 @@ from interface.models import InterfaceModel, InterfaceHistory
 
 
 class InterfaceSerializer(serializers.ModelSerializer):
-    raw = serializers.JSONField()
     class Meta:
         model = InterfaceModel
         fields = '__all__'
@@ -33,10 +32,7 @@ class InterfaceSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         for item in attrs:
             if item in ['headers', 'formData', 'urlencoded', 'asserts', 'parameters']:
-                try:
-                    json.loads(attrs[item])
-                except Exception as es:
-                    logger.error(es)
+                if not any([isinstance(attrs[item], dict), isinstance(attrs[item], list)]):
                     raise serializers.ValidationError('字段{}不是json格式'.format(item))
         return attrs
 

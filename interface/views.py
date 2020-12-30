@@ -24,7 +24,10 @@ class InterfaceViewSet(viewsets.ModelViewSet):
     pagination_class = pagination.LimitOffsetPagination
 
     def get_queryset(self):
-        return InterfaceModel.objects.filter(project=self.request.GET.get('projectId'))
+        if self.request.GET.get('projectId'):
+            return InterfaceModel.objects.filter(project=self.request.GET.get('projectId'))
+        else:
+            return InterfaceModel.objects.all()
 
     def list(self, request, *args, **kwargs):
         """
@@ -43,6 +46,11 @@ class InterfaceViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = InterfaceModel.objects.get(id=kwargs.get('pk'))
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class InterfaceTestViewSet(viewsets.ModelViewSet):
