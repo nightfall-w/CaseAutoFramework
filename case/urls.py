@@ -1,8 +1,8 @@
 from django.urls import path
-from case.views import GitTool, CaseTree
+from case.views import CaseTree
 
 app_name = 'case'
 urlpatterns = [
-    path('pull', GitTool.as_view(), name='case_pull'),
+    # path('pull', GitTool.as_view(), name='case_pull'),
     path('tree', CaseTree.as_view(), name="case_tree")
 ]

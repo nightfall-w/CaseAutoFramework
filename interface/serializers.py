@@ -13,7 +13,6 @@ class InterfaceSerializer(serializers.ModelSerializer):
         fields = '__all__'
         depth = 1
         extra_kwargs = {
-            "protocol": {'required': False},
             "headers": {'required': False},
             "formData": {'required': False},
             "urlencoded": {'required': False},
@@ -30,14 +29,14 @@ class InterfaceSerializer(serializers.ModelSerializer):
             )
         ]
 
-    def create(self, validated_data):
-        interface = InterfaceModel.objects.create(**validated_data)
-        if interface.addr.lower().startswith('https://'):
-            interface.protocol = "HTTPS"
-        else:
-            interface.protocol = "HTTP"
-        interface.save()
-        return interface
+    # def create(self, validated_data):
+    #     interface = InterfaceModel.objects.create(**validated_data)
+    #     if interface.addr.lower().startswith('https://'):
+    #         interface.protocol = "HTTPS"
+    #     else:
+    #         interface.protocol = "HTTP"
+    #     interface.save()
+    #     return interface
 
     def validate(self, attrs):
         for item in attrs:

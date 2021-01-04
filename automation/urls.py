@@ -5,7 +5,7 @@ from rest_framework.documentation import include_docs_urls
 from rest_framework.routers import DefaultRouter
 
 from automation.settings import MEDIA_ROOT
-from case.views import CaseViewSet, CaseTypeViewSet, CodeBaseViewSet
+from case.views import GitLabAddToken
 from interface.views import InterfaceViewSet, InterfaceTestViewSet
 from project.views import ProjectViewSet
 from testplan.views import ApiTestPlanViewSet, CaseTestPlanViewSet
@@ -16,9 +16,9 @@ router.register(r'interface', InterfaceViewSet, basename='api-interface')
 router.register(r'interfaceTest', InterfaceTestViewSet, basename='api-interface-test')
 router.register(r'apiTestPlan', ApiTestPlanViewSet, basename='api-test-plan')
 router.register(r'caseTestPlan', CaseTestPlanViewSet, basename='case-test-plan')
-router.register(r'case', CaseViewSet, basename='api-case')
-router.register(r'codeBase', CodeBaseViewSet, basename='code-base')
-router.register(r'caseType', CaseTypeViewSet, basename='api-case-type')
+router.register(r'gitlabAuthentication', GitLabAddToken, basename='api-case')
+# router.register(r'case', CaseViewSet, basename='api-case')
+# router.register(r'caseType', CaseTypeViewSet, basename='api-case-type')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
