@@ -12,11 +12,11 @@ class GitlabAuthenticationSerializer(serializers.ModelSerializer):
 class GitlabBranchSerializer(serializers.ModelSerializer):
     class Meta:
         model = GitCaseModel
-        exclude = ['create_time']
-        depth = 2
+        fields = '__all__'
+        depth = 1
 
-    def create(self, validated_data):
-        return GitCaseModel.objects.create(**self.context['request'].data)
+    # def create(self, validated_data):
+    #     return GitCaseModel.objects.create(**self.context['request'].data)
 
 # class CaseTypeSerializer(serializers.ModelSerializer):
 #     class Meta:

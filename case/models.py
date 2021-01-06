@@ -2,18 +2,17 @@ from django.db import models
 
 
 class GitCaseModel(models.Model):
+    gitlab_url = models.CharField(max_length=100, verbose_name="gitlab地址", help_text="gitlab地址")
     gitlab_project_name = models.CharField(max_length=100, verbose_name="gitlab项目名", help_text="gitlab项目名")
-    lester_user = models.CharField(max_length=25, verbose_name="最后提交用户", help_text="上一次提交的用户", default='')
     branch_name = models.CharField(max_length=20, verbose_name="当前分支", help_text="分支名称")
     status = models.CharField(max_length=10, verbose_name="case状态", help_text="状态")
-    lester_time = models.DateTimeField(verbose_name="上次更新时间", auto_now=True, help_text="上一次提交时间")
 
     class Meta:
         db_table = "branch_status"
         verbose_name = verbose_name_plural = "分支状态"
 
     def __str__(self):
-        return self.branch_name
+        return self.gitlab_project_name
 
 
 # class CaseTypeModel(models.Model):

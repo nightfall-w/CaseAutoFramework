@@ -1,15 +1,76 @@
 # -*- coding:utf-8 -*-
+import os
 import time
 
 import redis
-from django.db.models import F
 
-from automation.settings import logger
+from automation.settings import logger, BASE_DIR
 from celery_tasks.celery import app
 from testplan.models import CaseTestPlanTaskModel, CaseTestPlanModel, CaseJobModel
 from testplan.runner import ApiRunner, data_drive, CaseRunner
-from utils.job_status_enum import CaseTestPlanTaskState
+from utils.gitlab_tool import GitlabAPI
+from utils.job_status_enum import CaseTestPlanTaskState, BranchState
 from utils.redis_tool import RedisPoll
+from case.models import GitCaseModel
+
+
+# 由于是递归方式下载的所以要先创建项目相应目录
+def create_dir(dir_name):
+    if not os.path.isdir(dir_name):
+        logger.info("\033[0;32;40m开始创建目录: \033[0m{0}".format(dir_name))
+        os.makedirs(dir_name)
+        time.sleep(0.1)
+
+
+@app.task(name="branch_pull")
+def branch_pull(gitlab_info, project_id, branch_name):
+    instance = GitlabAPI(gitlab_url=gitlab_info.get('gitlab_url'),
+                         private_token=gitlab_info.get('private_token'))
+    project = instance.gl.projects.get(project_id)
+    obj_tuple = GitCaseModel.objects.update_or_create(gitlab_url=gitlab_info.get('gitlab_url'),
+                                                      gitlab_project_name=project.name,
+                                                      branch_name=branch_name)
+    obj_tuple[0].status = BranchState.PULLING
+    obj_tuple[0].save()
+    try:
+        info = project.repository_tree(all=True, recursive=True, as_list=True)
+        file_list = []
+        root_path = os.path.join(BASE_DIR, 'case_house',
+                                 gitlab_info.get('gitlab_url').replace(':', '-').replace('.', '-').replace('/', ''),
+                                 project.name,
+                                 branch_name)
+        if not os.path.isdir(root_path):
+            os.makedirs(root_path)
+        os.chdir(root_path)
+        # 调用创建目录的函数并生成文件名列表
+        for info_dir in range(len(info)):
+            if info[info_dir]['type'] == 'tree':
+                dir_name = info[info_dir]['path']
+                create_dir(dir_name)
+            else:
+                file_name = info[info_dir]['path']
+                file_list.append(file_name)
+        for info_file in range(len(file_list)):
+            # 开始下载
+            getf = project.files.get(file_path=file_list[info_file], ref=branch_name)
+            content = getf.decode()
+            with open(file_list[info_file], 'wb') as code:
+                logger.info("\033[0;32;40m开始下载文件: \033[0m{0}".format(file_list[info_file]))
+                code.write(content)
+        branch_obj = GitCaseModel.objects.get(gitlab_url=gitlab_info.get('gitlab_url'),
+                                              gitlab_project_name=project.name, branch_name=branch_name,
+                                              )
+        branch_obj.status = BranchState.DONE
+        branch_obj.save()
+        return True
+    except Exception as es:
+        logger.error(str(es))
+        branch_obj = GitCaseModel.objects.get(gitlab_url=gitlab_info.get('gitlab_url'),
+                                              gitlab_project_name=project.name, branch_name=branch_name,
+                                              )
+        branch_obj.status = BranchState.FAILED
+        branch_obj.save()
+        return False
 
 
 @app.task(name="api_testplan_executor")

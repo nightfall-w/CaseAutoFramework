@@ -294,3 +294,6 @@ CORS_ALLOW_HEADERS = (
     'x-csrftoken',
     'x-requested-with',
 )
+
+AES_KEY = 'yer6f0t237oz1i@$'
+AES_IV = '1364752097384951'

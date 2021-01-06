@@ -21,3 +21,9 @@ class CaseTestPlanTaskState:
     WAITING = "WAITING"
     RUNNING = "RUNNING"
     FINISH = "FINISH"
+
+
+class BranchState:
+    PULLING = "PULLING"
+    DONE = "DONE"
+    FAILED = "FAILED"
