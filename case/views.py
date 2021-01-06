@@ -3,7 +3,7 @@ import os
 import re
 import time
 from threading import Thread
-
+from requests.exceptions import ConnectTimeout
 import coreapi
 import coreschema
 import git
@@ -167,6 +167,9 @@ class GitLabAddToken(viewsets.ModelViewSet):
             return Response({'success': True, 'result': project_list, 'token': encrypt_token})
         except GitlabAuthenticationError:
             # 验证gitlab地址以及private token无效处理
+            gitlab_infos = GitlabModel.objects.filter(**request.data)
+            if gitlab_infos:
+                gitlab_infos.delete()
             return Response({"success": False, "err_msg": "无效的git地址或者token"})
         except IntegrityError:
             # 已经被数据库记录过的gitlab url, private token, 直接返回数据库创建过的数据，　不再重新创建
@@ -174,6 +177,8 @@ class GitLabAddToken(viewsets.ModelViewSet):
             prpcrypt_instance = PrpCrypt(AES_KEY, AES_IV)
             encrypt_token = prpcrypt_instance.encrypt(request.data.get('private_token'))
             return Response({'success': True, 'result': project_list, 'token': encrypt_token})
+        except ConnectTimeout:
+            return Response({"success": False, "err_msg": "连接gitlab地址%s超时" % request.data.get('gitlab_url')})
 
 
 class GitlabBranch(APIView):

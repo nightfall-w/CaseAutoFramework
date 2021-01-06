@@ -10,7 +10,8 @@ class GitlabAPI(object):
     def __init__(self, gitlab_url, private_token, *args, **kwargs):
         self.gitlab_url = gitlab_url
         self.token = private_token
-        self.gl = gitlab.Gitlab(url=self.gitlab_url, private_token=self.token) # 参数为gitlab仓库地址和个人private_token
+        self.gl = gitlab.Gitlab(url=self.gitlab_url, private_token=self.token,
+                                timeout=3)  # 参数为gitlab仓库地址和个人private_token
 
     def get_user_id(self, username):
         """
