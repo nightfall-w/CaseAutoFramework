@@ -1,32 +1,28 @@
 import json
 import os
-import re
-import time
-from threading import Thread
-from requests.exceptions import ConnectTimeout
+
 import coreapi
 import coreschema
-import git
 from django.conf import settings
 from django.db import IntegrityError
 from django.http import JsonResponse, HttpResponse
-from rest_framework import permissions, pagination, viewsets, status
+from gitlab.exceptions import GitlabAuthenticationError
+from requests.exceptions import ConnectTimeout
+from rest_framework import permissions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.schemas import AutoSchema
 from rest_framework.views import APIView
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
-from automation.settings import logger
-from case.models import GitlabModel
-from case.serializers import GitlabAuthenticationSerializer, GitlabBranchSerializer
-from standard.config import ConfigParser
-from standard.enum import CaseStatus
-from standard.enum import ResponseCode
-from utils.gitlab_tool import GitlabAPI
-from gitlab.exceptions import GitlabAuthenticationError
-from utils.encryption import PrpCrypt, decrypt_token
 from automation.settings import AES_IV, AES_KEY
+from automation.settings import logger
+from case.models import GitlabModel, GitCaseModel
+from case.serializers import GitlabAuthenticationSerializer
 from celery_tasks.tasks import branch_pull
+from standard.config import ConfigParser
+from utils.encryption import PrpCrypt, decrypt_token
+from utils.gitlab_tool import GitlabAPI
+from utils.job_status_enum import BranchState
 
 
 class PathTree(object):
@@ -219,7 +215,6 @@ class GitlabPull(APIView):
         coreapi.Field(name="branch", required=False, location="form", schema=coreschema.String(description='分支名')),
     ])
     schema = Schema
-    # serializer_class = GitlabBranchSerializer
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -238,10 +233,15 @@ class GitlabPull(APIView):
         _decrypt_token = decrypt_token(encrypt_token)
         gitlab_info = GitlabModel.objects.filter(private_token=_decrypt_token).first()
         serializer = GitlabAuthenticationSerializer(instance=gitlab_info, many=False)
-        if gitlab_info:
-            branch_pull.delay(serializer.data, project_id, branch_name)
+        if gitlab_info:  # gitlab　token存在于数据库中
+            branch_instance = GitCaseModel.objects.filter(gitlab_url=gitlab_info.gitlab_url,
+                                                          gitlab_project_id=project_id,
+                                                          branch_name=branch_name).first()
+            if not branch_instance or branch_instance.status != BranchState.PULLING:
+                branch_pull.delay(serializer.data, project_id, branch_name)
             return Response({'success': True, 'pull_status': 'STARTING'})
         else:
+            # gitlab token不存在数据库
             return Response(status=status.HTTP_404_NOT_FOUND)
 
 
@@ -250,7 +250,11 @@ class CaseTree(APIView):
     case管理器
     """
     Schema = AutoSchema(manual_fields=[
-        coreapi.Field(name="branch", required=False, location="query",
+        coreapi.Field(name="gitlab_url", required=False, location="query",
+                      schema=coreschema.String(description='gitlab地址')),
+        coreapi.Field(name="project_name", required=False, location="query",
+                      schema=coreschema.String(description='gitlab项目名')),
+        coreapi.Field(name="branch_name", required=False, location="query",
                       schema=coreschema.String(description='case所在分支')),
         coreapi.Field(name="label", required=False, location="query", schema=coreschema.String(description='case名称')),
         coreapi.Field(name="path", required=False, location="query", schema=coreschema.String(description='case路径')),
@@ -263,7 +267,9 @@ class CaseTree(APIView):
         """
         【获取case信息】
         """
-        case_branch = request.query_params.dict().get('branch', 'master')
+        gitlab_url = request.query_params.dict().get('gitlab_url')
+        project_name = request.query_params.dict().get('project_name')
+        branch_name = request.query_params.dict().get('branch_name', 'master')
         case_name = request.query_params.dict().get('label')
         case_path = request.query_params.dict().get('path')
         if case_path:
@@ -278,10 +284,12 @@ class CaseTree(APIView):
                 return JsonResponse({"error": "case:{}不存在".format(case_name)})
         else:
             # 没有指定到case路径 则返回case目录树
-            path_tree_instance = PathTree(case_branch)
-            tree = path_tree_instance.path_tree(os.path.join(settings.BASE_DIR, 'case_house', case_branch))
+            path_tree_instance = PathTree(branch_name)
+            gitlab_path = gitlab_url.replace(':', '-').replace('.', '-').replace('/', '')
+            tree = path_tree_instance.path_tree(
+                os.path.join(settings.BASE_DIR, 'case_house', gitlab_path, project_name, branch_name))
             refine_tree = path_tree_instance.empty_json_data(tree)
-            return JsonResponse({"branch": case_branch, "case_tree": [refine_tree]})
+            return JsonResponse({"branch": branch_name, "case_tree": [refine_tree]})
 
 # class CaseViewSet(viewsets.ModelViewSet):
 #     authentication_classes = (JSONWebTokenAuthentication,)

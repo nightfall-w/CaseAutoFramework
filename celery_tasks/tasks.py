@@ -5,13 +5,13 @@ import time
 import redis
 
 from automation.settings import logger, BASE_DIR
+from case.models import GitCaseModel
 from celery_tasks.celery import app
 from testplan.models import CaseTestPlanTaskModel, CaseTestPlanModel, CaseJobModel
 from testplan.runner import ApiRunner, data_drive, CaseRunner
 from utils.gitlab_tool import GitlabAPI
 from utils.job_status_enum import CaseTestPlanTaskState, BranchState
 from utils.redis_tool import RedisPoll
-from case.models import GitCaseModel
 
 
 # 由于是递归方式下载的所以要先创建项目相应目录
@@ -29,6 +29,7 @@ def branch_pull(gitlab_info, project_id, branch_name):
     project = instance.gl.projects.get(project_id)
     obj_tuple = GitCaseModel.objects.update_or_create(gitlab_url=gitlab_info.get('gitlab_url'),
                                                       gitlab_project_name=project.name,
+                                                      gitlab_project_id=project.id,
                                                       branch_name=branch_name)
     obj_tuple[0].status = BranchState.PULLING
     obj_tuple[0].save()
@@ -57,7 +58,7 @@ def branch_pull(gitlab_info, project_id, branch_name):
             with open(file_list[info_file], 'wb') as code:
                 logger.info("\033[0;32;40m开始下载文件: \033[0m{0}".format(file_list[info_file]))
                 code.write(content)
-        branch_obj = GitCaseModel.objects.get(gitlab_url=gitlab_info.get('gitlab_url'),
+        branch_obj = GitCaseModel.objects.get(gitlab_url=gitlab_info.get('gitlab_url'), gitlab_project_id=project.id,
                                               gitlab_project_name=project.name, branch_name=branch_name,
                                               )
         branch_obj.status = BranchState.DONE
@@ -65,7 +66,7 @@ def branch_pull(gitlab_info, project_id, branch_name):
         return True
     except Exception as es:
         logger.error(str(es))
-        branch_obj = GitCaseModel.objects.get(gitlab_url=gitlab_info.get('gitlab_url'),
+        branch_obj = GitCaseModel.objects.get(gitlab_url=gitlab_info.get('gitlab_url'), gitlab_project_id=project.id,
                                               gitlab_project_name=project.name, branch_name=branch_name,
                                               )
         branch_obj.status = BranchState.FAILED

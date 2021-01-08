@@ -1,5 +1,6 @@
 import os
 import time
+
 import gitlab
 
 from automation.settings import logger

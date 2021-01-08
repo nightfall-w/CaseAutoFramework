@@ -3,9 +3,12 @@ from django.db import models
 
 class GitCaseModel(models.Model):
     gitlab_url = models.CharField(max_length=100, verbose_name="gitlab地址", help_text="gitlab地址")
+    gitlab_project_id = models.IntegerField(verbose_name='gitlab项目id', help_text='gitlab项目id')
     gitlab_project_name = models.CharField(max_length=100, verbose_name="gitlab项目名", help_text="gitlab项目名")
     branch_name = models.CharField(max_length=20, verbose_name="当前分支", help_text="分支名称")
     status = models.CharField(max_length=10, verbose_name="case状态", help_text="状态")
+    create_date = models.DateTimeField(auto_now_add=True, verbose_name="创建事件", help_text="创建时间")
+    update_date = models.DateTimeField(auto_now=True, verbose_name="更新事件", help_text="更新时间")
 
     class Meta:
         db_table = "branch_status"
@@ -48,11 +51,13 @@ class GitlabModel(models.Model):
     gitlab_url = models.CharField(max_length=200, verbose_name="clone代码库地址(http方式)", help_text="clone代码库地址(http方式)")
     desc = models.CharField(max_length=10, verbose_name="描述", help_text="描述", default='')
     private_token = models.CharField(max_length=30, verbose_name="私有令牌", help_text="私有令牌")
+    create_date = models.DateTimeField(auto_now_add=True, verbose_name="创建事件", help_text="创建时间")
+    update_date = models.DateTimeField(auto_now=True, verbose_name="更新事件", help_text="更新时间")
 
     class Meta:
         unique_together = ["gitlab_url", "private_token"]
         db_table = "gitlab_info"
-        verbose_name = verbose_name_plural = "gitlab_url"
+        verbose_name = verbose_name_plural = "gitlab信息"
 
     def __str__(self):
         return self.gitlab_url
