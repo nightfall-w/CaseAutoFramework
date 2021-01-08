@@ -3,7 +3,6 @@ import uuid
 
 import coreapi
 import coreschema
-from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, pagination, permissions, status
