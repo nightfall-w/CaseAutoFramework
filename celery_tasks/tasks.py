@@ -34,12 +34,12 @@ def branch_pull(gitlab_info, project_id, branch_name):
     obj_tuple[0].status = BranchState.PULLING
     obj_tuple[0].save()
     try:
-        info = project.repository_tree(all=True, recursive=True, as_list=True)
+        info = project.repository_tree(ref=branch_name, all=True, recursive=True, as_list=True)
         file_list = []
         root_path = os.path.join(BASE_DIR, 'case_house',
                                  gitlab_info.get('gitlab_url').replace(':', '-').replace('.', '-').replace('/', ''),
-                                 project.name,
-                                 branch_name)
+                                 branch_name,
+                                 project.name)
         if not os.path.isdir(root_path):
             os.makedirs(root_path)
         os.chdir(root_path)

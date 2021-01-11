@@ -151,19 +151,20 @@ class GitLabAddToken(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
+            if request.data.get('gitlab_url')[-1] == '/':  # 去除url结尾的 '/' 符号　统一规范
+                request.data['gitlab_url'] = request.data.get('gitlab_url')[0:-1]
             instance = GitlabAPI(gitlab_url=request.data.get('gitlab_url'),
                                  private_token=request.data.get('private_token'))
             projects = instance.gl.projects.list(all=True, as_list=True)
             project_list = {project.name: project.id for project in projects}
-            if request.data.get('gitlab_url')[-1] == '/':  # 去除url结尾的 '/' 符号　统一规范
-                request.data['gitlab_url'] = request.data.get('gitlab_url')[0:-1]
             GitlabModel.objects.create(**request.data)
             prpcrypt_instance = PrpCrypt(AES_KEY, AES_IV)  # AES加密实例
             encrypt_token = prpcrypt_instance.encrypt(request.data.get('private_token'))  # 加密private_token
             return Response({'success': True, 'result': project_list, 'token': encrypt_token})
         except GitlabAuthenticationError:
             # 验证gitlab地址以及private token无效处理
-            gitlab_infos = GitlabModel.objects.filter(**request.data)
+            gitlab_infos = GitlabModel.objects.filter(gitlab_url=request.data.get('gitlab_url'),
+                                                      private_token=request.data.get('private_token'))
             if gitlab_infos:
                 gitlab_infos.delete()
             return Response({"success": False, "err_msg": "无效的git地址或者token"})
