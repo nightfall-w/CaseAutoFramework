@@ -19,6 +19,13 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+# 时区设置
+LANGUAGE_CODE = 'zh-Hans'
+TIME_ZONE = 'Asia/Shanghai'
+USE_I18N = True
+USE_L10N = True
+USE_TZ = False
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -99,7 +106,7 @@ CELERY_BROKER_URL = 'amqp://admin:admin@127.0.0.1:5672//'
 CELERY_RESULT_BACKEND = 'redis://%s:6379/2' % REDIS_SERVER
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_ENABLE_UTC = False
-CELERY_TIMEZONE = 'Asia/Shanghai'
+CELERY_TIMEZONE = TIME_ZONE
 DJANGO_CELERY_BEAT_TZ_AWARE = False
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -165,13 +172,6 @@ SESSION_REDIS_PORT = 6379
 SESSION_REDIS_DB = 4  # 选择存储槽
 SESSION_REDIS_PASSWORD = ''
 SESSION_REDIS_PREFIX = 'session'
-
-# 时区设置
-LANGUAGE_CODE = 'zh-Hans'
-TIME_ZONE = 'Asia/Shanghai'
-USE_I18N = True
-USE_L10N = True
-USE_TZ = False
 
 # 存静态文件
 STATIC_URL = '/static/'
