@@ -1,4 +1,6 @@
 # -*- coding:utf-8 -*-
+from __future__ import absolute_import, unicode_literals
+
 import os
 import time
 
@@ -6,7 +8,7 @@ import redis
 
 from automation.settings import logger, BASE_DIR
 from case.models import GitCaseModel
-from celery_tasks.celery import app
+from celery_tasks.celery import app as celery_app
 from testplan.models import CaseTestPlanTaskModel, CaseTestPlanModel, CaseJobModel
 from testplan.runner import ApiRunner, data_drive, CaseRunner
 from utils.gitlab_tool import GitlabAPI
@@ -22,7 +24,7 @@ def create_dir(dir_name):
         time.sleep(0.1)
 
 
-@app.task(name="branch_pull")
+@celery_app.task(name="branch_pull")
 def branch_pull(gitlab_info, project_id, branch_name):
     instance = GitlabAPI(gitlab_url=gitlab_info.get('gitlab_url'),
                          private_token=gitlab_info.get('private_token'))
@@ -74,7 +76,7 @@ def branch_pull(gitlab_info, project_id, branch_name):
         return False
 
 
-@app.task(name="api_testplan_executor")
+@celery_app.task(name="api_testplan_executor")
 def api_testplan_executor(test_plan_id, interfaceIds, api_test_plan_task_id):
     """
     【api测试计划的执行器】
@@ -84,7 +86,7 @@ def api_testplan_executor(test_plan_id, interfaceIds, api_test_plan_task_id):
     return True
 
 
-@app.task(name="case_test_task_executor")
+@celery_app.task(name="case_test_task_executor")
 def case_test_task_executor(case_task_id):
     """
     【case测试计划执行器】
@@ -111,7 +113,7 @@ def case_test_task_executor(case_task_id):
     return True
 
 
-@app.task(name="case_test_job_executor")
+@celery_app.task(name="case_test_job_executor")
 def case_test_job_executor(case_job_id, project_id, test_plan_uid, task_id):
     """
     【case job执行处理器】

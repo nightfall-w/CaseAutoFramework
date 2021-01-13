@@ -10,8 +10,14 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'automation.settings')
 
 app = Celery('automation')
 
-app.config_from_object('django.conf:settings', namespace='CELERY')
+# app.config_from_object('django.conf:settings', namespace='CELERY')
+app.config_from_object('celery_tasks.config', namespace='CELERY')
 app.now = timezone.now
+# app.conf.update(
+#     timezone='Asia/Shanghai',
+#     enable_utc=False,
+#
+# )
 
 # Load task modules from all registered Django app configs.
 
