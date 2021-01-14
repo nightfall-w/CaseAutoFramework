@@ -1,6 +1,6 @@
 import json
 import os
-
+from requests.exceptions import MissingSchema
 import coreapi
 import coreschema
 from django.conf import settings
@@ -150,6 +150,8 @@ class GitLabAddToken(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)  # 登陆成功的token
 
     def create(self, request, *args, **kwargs):
+        if not all([request.data.get('gitlab_url'), request.data.get('private_token')]):
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={'success': False, 'err_msg': '缺少必填参数'})
         try:
             if request.data.get('gitlab_url')[-1] == '/':  # 去除url结尾的 '/' 符号　统一规范
                 request.data['gitlab_url'] = request.data.get('gitlab_url')[0:-1]
@@ -167,15 +169,20 @@ class GitLabAddToken(viewsets.ModelViewSet):
                                                       private_token=request.data.get('private_token'))
             if gitlab_infos:
                 gitlab_infos.delete()
-            return Response({"success": False, "err_msg": "无效的git地址或者token"})
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={"success": False, "err_msg": "无效的git地址或者token"})
         except IntegrityError:
             # 已经被数据库记录过的gitlab url, private token, 直接返回数据库创建过的数据，　不再重新创建
-            GitlabModel.objects.get(**request.data)
             prpcrypt_instance = PrpCrypt(AES_KEY, AES_IV)
             encrypt_token = prpcrypt_instance.encrypt(request.data.get('private_token'))
             return Response({'success': True, 'result': project_list, 'token': encrypt_token})
         except ConnectTimeout:
-            return Response({"success": False, "err_msg": "连接gitlab地址%s超时" % request.data.get('gitlab_url')})
+            return Response(status=status.HTTP_408_REQUEST_TIMEOUT,
+                            data={"success": False, "err_msg": "连接gitlab地址%s超时" % request.data.get('gitlab_url')})
+        except MissingSchema as e:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={"success": False,
+                                                                      "err_msg": "Invalid URL '{}': No schema supplied. Perhaps you meant http://{}?".format(
+                                                                          request.data.get('gitlab_url'),
+                                                                          request.data.get('gitlab_url'))})
 
 
 class GitlabBranch(APIView):
