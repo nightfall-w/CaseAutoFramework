@@ -8,7 +8,7 @@ import redis
 
 from automation.settings import logger, BASE_DIR
 from case.models import GitCaseModel
-from celery_tasks.celery import app as celery_app
+from celery_tasks import celery_app
 from testplan.models import CaseTestPlanTaskModel, CaseTestPlanModel, CaseJobModel
 from testplan.runner import ApiRunner, data_drive, CaseRunner
 from utils.gitlab_tool import GitlabAPI

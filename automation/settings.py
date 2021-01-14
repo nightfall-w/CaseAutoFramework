@@ -99,40 +99,7 @@ DATABASES = {
 
 # REDIS SERVER
 REDIS_SERVER = 'localhost'
-#
-# # CELERY STUFF
-# CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers.DatabaseScheduler'
-# BROKER_URL = 'amqp://admin:admin@127.0.0.1:5672//'
-# CELERY_BROKER_URL = 'amqp://admin:admin@127.0.0.1:5672//'
-# CELERY_RESULT_BACKEND = 'redis://%s:6379/2' % REDIS_SERVER
-# CELERY_ACCEPT_CONTENT = ['application/json']
-# CELERY_ENABLE_UTC = False
-# CELERY_TIMEZONE = TIME_ZONE
-# DJANGO_CELERY_BEAT_TZ_AWARE = False
-# CELERY_TASK_SERIALIZER = 'json'
-# CELERY_RESULT_SERIALIZER = 'json'
-# CELERY_QUEUES = (
-#     Queue(
-#         "default",
-#         Exchange("default"),
-#         routing_key="default"),
-#     Queue(
-#         "api_testplan_executor",
-#         Exchange("api_testplan_executor"),
-#         routing_key="api_testplan_executor"),
-#     Queue(
-#         "branch_pull_queue",
-#         Exchange("branch_pull_queue"),
-#         routing_key="branch_pull_key"),
-# )
-# # Queue的路由
-# CELERY_ROUTES = {
-#     'api_testplan_executor': {"queue": "api_testplan_executor",
-#                               "routing_key": "api_testplan_executor"},
-#     'branch_pull': {"queue": "branch_pull_queue",
-#                     "routing_key": "branch_pull_key"},
-# }
-# Password validation
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {
