@@ -56,13 +56,16 @@ def branch_pull(gitlab_info, project_id, branch_name):
             else:
                 file_name = info[info_dir]['path']
                 file_list.append(file_name)
-        for info_file in range(len(file_list)):
+        file_list_len = len(file_list)
+        for index, info_file in enumerate(range(file_list_len)):
             # 开始下载
             getf = project.files.get(file_path=file_list[info_file], ref=branch_name)
             content = getf.decode()
             with open(file_list[info_file], 'wb') as code:
                 logger.info("\033[0;32;40m开始下载文件: \033[0m{0}".format(file_list[info_file]))
                 code.write(content)
+            finish_progress = float('%.2f' % ((index + 1) / file_list_len)) * 100
+            cache.set(cache_key + "progress", finish_progress)
         branch_obj = GitCaseModel.objects.get(gitlab_url=gitlab_info.get('gitlab_url'), gitlab_project_id=project.id,
                                               gitlab_project_name=project.name, branch_name=branch_name,
                                               )

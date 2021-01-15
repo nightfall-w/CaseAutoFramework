@@ -24,15 +24,20 @@ class ResultConsumer(WebsocketConsumer):
             token = text_data_json.get('token')
             project_id = text_data_json.get('project_id')
             branch_name = text_data_json.get('branch_name')
-            private_token = decrypt_token(token)
-            cache_key = private_token + str(project_id) + branch_name
-            branch_status = cache.get(cache_key)
-            if not branch_status:
-                # 缓存中没有值 从mysql读取
-                gitlab_info = GitlabModel.objects.filter(private_token=private_token).first()
-                branch_status = GitCaseModel.objects.filter(gitlab_url=gitlab_info.gitlab_url,
-                                                            gitlab_project_id=project_id,
-                                                            branch_name=branch_name).first().status
-            response_data = {"project_id": project_id, "branch_name": branch_name, "status": branch_status}
-            self.send(text_data=json.dumps(response_data))
-            time.sleep(1)
+            if not all([token, project_id, branch_name]):
+                break
+            else:
+                private_token = decrypt_token(token)
+                cache_key = private_token + str(project_id) + branch_name
+                branch_status = cache.get(cache_key)
+                progress = cache.get(cache_key + "progress")
+                if not branch_status:
+                    # 缓存中没有值 从mysql读取
+                    gitlab_info = GitlabModel.objects.filter(private_token=private_token).first()
+                    branch_status = GitCaseModel.objects.filter(gitlab_url=gitlab_info.gitlab_url,
+                                                                gitlab_project_id=project_id,
+                                                                branch_name=branch_name).first().status
+                response_data = {"project_id": project_id, "branch_name": branch_name, "status": branch_status,
+                                 "progress": progress}
+                self.send(text_data=json.dumps(response_data))
+                time.sleep(1)
