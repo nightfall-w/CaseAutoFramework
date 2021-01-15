@@ -100,7 +100,6 @@ DATABASES = {
 # REDIS SERVER
 REDIS_SERVER = 'localhost'
 
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -134,6 +133,18 @@ REST_FRAMEWORK = {
 JWT_AUTH = {
     'JWT_EXPIRATION_DELTA': datetime.timedelta(days=3),
     'JWT_RESPONSE_PAYLOAD_HANDLER': 'user.JWTResponseUser.jwt_response_payload_handler',
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://%s:6379/3" % REDIS_SERVER,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": {"max_connections": 100, "decode_responses": False}
+            # "PASSWORD": "密码",
+        }
+    }
 }
 
 # 使用redis保存session数据

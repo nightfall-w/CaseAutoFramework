@@ -210,7 +210,7 @@ class GitlabBranch(APIView):
             project = instance.gl.projects.get(project_id)
             branches = project.branches.list()
             branches_list = [branch.name for branch in branches]
-            return Response(branches_list)
+            return Response({"success": True, "result": branches_list})
         else:
             return Response(status=status.HTTP_404_NOT_FOUND)
 

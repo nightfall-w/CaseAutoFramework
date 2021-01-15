@@ -14,6 +14,7 @@ from testplan.runner import ApiRunner, data_drive, CaseRunner
 from utils.gitlab_tool import GitlabAPI
 from utils.job_status_enum import CaseTestPlanTaskState, BranchState
 from utils.redis_tool import RedisPoll
+from django.core.cache import cache
 
 
 # 由于是递归方式下载的所以要先创建项目相应目录
@@ -35,6 +36,8 @@ def branch_pull(gitlab_info, project_id, branch_name):
                                                       branch_name=branch_name)
     obj_tuple[0].status = BranchState.PULLING
     obj_tuple[0].save()
+    cache_key = gitlab_info.get('private_token') + str(project_id) + branch_name
+    cache.set(cache_key, BranchState.PULLING)
     try:
         info = project.repository_tree(ref=branch_name, all=True, recursive=True, as_list=True)
         file_list = []
@@ -65,6 +68,7 @@ def branch_pull(gitlab_info, project_id, branch_name):
                                               )
         branch_obj.status = BranchState.DONE
         branch_obj.save()
+        cache.set(cache_key, BranchState.DONE)
         return True
     except Exception as es:
         logger.error(str(es))
@@ -73,6 +77,7 @@ def branch_pull(gitlab_info, project_id, branch_name):
                                               )
         branch_obj.status = BranchState.FAILED
         branch_obj.save()
+        cache.set(cache_key, BranchState.FAILED)
         return False
 
 
