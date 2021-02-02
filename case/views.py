@@ -170,7 +170,7 @@ class GitLabAddToken(viewsets.ModelViewSet):
             if gitlab_infos:
                 gitlab_infos.delete()
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"success": False, "err_msg": "无效的git地址或者token"})
-        except IntegrityError:
+        except IntegrityError as e:
             # 已经被数据库记录过的gitlab url, private token, 直接返回数据库创建过的数据，　不再重新创建
             prpcrypt_instance = PrpCrypt(AES_KEY, AES_IV)
             encrypt_token = prpcrypt_instance.encrypt(request.data.get('private_token'))
