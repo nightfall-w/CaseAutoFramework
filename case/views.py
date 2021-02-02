@@ -295,7 +295,7 @@ class CaseTree(APIView):
             path_tree_instance = PathTree(branch_name)
             gitlab_path = gitlab_url.replace(':', '-').replace('.', '-').replace('/', '')
             tree = path_tree_instance.path_tree(
-                os.path.join(settings.BASE_DIR, 'case_house', gitlab_path, project_name, branch_name))
+                os.path.join(settings.BASE_DIR, 'case_house', gitlab_path, branch_name, project_name))
             refine_tree = path_tree_instance.empty_json_data(tree)
             return JsonResponse({"branch": branch_name, "case_tree": [refine_tree]})
 
