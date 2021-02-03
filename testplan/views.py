@@ -191,8 +191,6 @@ class TriggerCasePlan(APIView):
                       schema=coreschema.Integer(description='项目id')),
         coreapi.Field(name="testPlanId", required=True, location="form",
                       schema=coreschema.String(description='接口测试计划uid')),
-        coreapi.Field(name="parallel", required=False, location="form",
-                      schema=coreschema.Boolean(description='是否并行执行case,默认False'))
     ])
     schema = Schema
     authentication_classes = (JSONWebTokenAuthentication,)
@@ -202,7 +200,6 @@ class TriggerCasePlan(APIView):
         receive_data = request.data
         testplan_id = receive_data.get('testPlanId', None)
         project_id = receive_data.get('projectId', None)
-        parallel = receive_data.get('parallel', False)
         if not all([testplan_id, project_id]):
             return Response({"error": "缺少必要的参数"}, status=status.HTTP_400_BAD_REQUEST)
         case_test_plan = CaseTestPlanModel.objects.filter(project=project_id, plan_id=testplan_id).first()
@@ -218,7 +215,7 @@ class TriggerCasePlan(APIView):
         CaseRunner.distributor(case_test_plan_task)
 
         # 根据是否并行执行case选择不用的触发器
-        if parallel:
+        if case_test_plan.parallel:
             '''并行执行'''
             case_jobs_id = CaseJobModel.objects.filter(case_task_id=case_test_plan_task.id).values_list('id', flat=True)
             for case_job_id in case_jobs_id:
