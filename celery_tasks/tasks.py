@@ -106,7 +106,7 @@ def case_test_task_executor(case_task_id):
     case_task.state = CaseTestPlanTaskState.RUNNING
     case_task.save()
     for index, case_job in enumerate(case_jobs):
-        CaseRunner.executor(case_job=case_job, project_id=case_test_plan.project, test_plan_uid=case_test_plan.plan_id,
+        CaseRunner.executor(case_job=case_job, project_id=case_test_plan.project_id, test_plan_uid=case_test_plan.plan_id,
                             task_id=case_task_id)
         # case_task = CaseTestPlanTaskModel.objects.filter(id=case_task_id).first()
         case_task.refresh_from_db()

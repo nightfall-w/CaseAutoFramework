@@ -34,7 +34,7 @@ class ApiTestPlanViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        return ApiTestPlanModel.objects.filter(project=self.request.GET.get('projectId'))
+        return ApiTestPlanModel.objects.filter(project_id=self.request.GET.get('projectId'))
 
     def create(self, request, *args, **kwargs):
         """
@@ -60,7 +60,7 @@ class ApiTestPlanViewSet(viewsets.ModelViewSet):
                 return Response({"error": "接口id为{}的api不存在".format(_id)})
         plan_id = uuid.uuid4()
         ApiTestPlanModel.objects.create(name=test_plan_name, plan_id=plan_id, description=description,
-                                        project=int(projectId),
+                                        project_id=int(projectId),
                                         interfaceIds=json.dumps(interfaceIds),
                                         create_user=request.user, )
         return Response(
@@ -123,7 +123,7 @@ class TriggerApiPlan(APIView):
         if not all([testplan_id, project_id]):
             return Response({"error": "缺少必要的参数"}, status=status.HTTP_400_BAD_REQUEST)
         api_testplan = ApiTestPlanModel.objects.filter(
-            plan_id=testplan_id, project=project_id).first()
+            plan_id=testplan_id, project_id=project_id).first()
         if not api_testplan:
             return Response({"error": "testplanId为：{}不存在".format(testplan_id)})
         interfaceIds = json.loads(api_testplan.interfaceIds)
@@ -150,7 +150,7 @@ class CaseTestPlanViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        return CaseTestPlanModel.objects.filter(project=self.request.GET.get('projectId'))
+        return CaseTestPlanModel.objects.filter(project_id=self.request.GET.get('projectId'))
 
 
 @method_decorator(csrf_exempt, name='get')
@@ -202,7 +202,7 @@ class TriggerCasePlan(APIView):
         project_id = receive_data.get('projectId', None)
         if not all([testplan_id, project_id]):
             return Response({"error": "缺少必要的参数"}, status=status.HTTP_400_BAD_REQUEST)
-        case_test_plan = CaseTestPlanModel.objects.filter(project=project_id, plan_id=testplan_id).first()
+        case_test_plan = CaseTestPlanModel.objects.filter(project_id=project_id, plan_id=testplan_id).first()
         if not case_test_plan:
             return Response({"error": "testplan {} not find".format(testplan_id)}, status=status.HTTP_400_BAD_REQUEST)
         case_paths = case_test_plan.case_paths
