@@ -9,7 +9,7 @@ class InterfaceModel(models.Model):
     ]
     project = models.IntegerField(verbose_name="项目id", null=False, help_text="项目id")
     name = models.CharField(verbose_name="接口名称", max_length=50, null=False, help_text="接口名称")
-    desc = models.TextField(verbose_name="接口描述", default='', help_text="接口描述")
+    desc = models.TextField(verbose_name="接口描述", null=True, blank=True,  default='', help_text="接口描述")
     addr = models.CharField(verbose_name="接口地址", null=False, max_length=1000, help_text="接口地址")
     request_mode = models.CharField(verbose_name="请求方式", choices=MODE_LIST, max_length=8,
                                     help_text="请求方式")
@@ -37,7 +37,7 @@ class InterfaceCacheModel(models.Model):
     ]
     project = models.IntegerField(verbose_name="项目id", null=False, help_text="项目id")
     name = models.CharField(verbose_name="接口名称", max_length=50, null=True, help_text="接口名称")
-    desc = models.TextField(verbose_name="接口描述", null=True, default='', help_text="接口描述")
+    desc = models.TextField(verbose_name="接口描述", null=True, blank=True, default='', help_text="接口描述")
     addr = models.CharField(verbose_name="接口地址", null=False, max_length=1000, help_text="接口地址")
     request_mode = models.CharField(verbose_name="请求方式", choices=MODE_LIST, max_length=8,
                                     help_text="请求方式")

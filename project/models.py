@@ -4,7 +4,7 @@ from django_jsonfield_backport.models import JSONField
 
 class ProjectModel(models.Model):
     name = models.CharField(max_length=100, unique=True, verbose_name='项目名', help_text="项目名称")
-    desc = models.TextField(verbose_name='项目描述', default='', help_text="项目描述")
+    desc = models.TextField(verbose_name='项目描述', null=True, blank=True, default='', help_text="项目描述")
     env_variable = JSONField(verbose_name="环境变量", null=False, help_text="环境变量")
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True, help_text="创建时间")
     update_time = models.DateTimeField(verbose_name="最后一次更新时间", auto_now=True, help_text="最后一次更新时间")

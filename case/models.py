@@ -49,7 +49,7 @@ class GitCaseModel(models.Model):
 
 class GitlabModel(models.Model):
     gitlab_url = models.CharField(max_length=200, verbose_name="clone代码库地址(http方式)", help_text="clone代码库地址(http方式)")
-    desc = models.CharField(max_length=10, verbose_name="描述", help_text="描述", default='')
+    desc = models.CharField(max_length=10, verbose_name="描述", null=True, blank=True, help_text="描述", default='')
     private_token = models.CharField(max_length=30, verbose_name="私有令牌", help_text="私有令牌")
     create_date = models.DateTimeField(auto_now_add=True, verbose_name="创建事件", help_text="创建时间")
     update_date = models.DateTimeField(auto_now=True, verbose_name="更新事件", help_text="更新时间")
