@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 from testplan.models import ApiTestPlanModel, CaseTestPlanModel, CaseTestPlanTaskModel, ApiTestPlanTaskModel
+from utils.job_status_enum import CaseTestPlanTaskState
 
 
 class ApiTestPlanSerializer(serializers.ModelSerializer):
@@ -19,6 +20,8 @@ class ApiTestPlanSerializer(serializers.ModelSerializer):
 
 
 class CaseTestPlanSerializer(serializers.ModelSerializer):
+    running_task_number = serializers.SerializerMethodField()
+
     class Meta:
         model = CaseTestPlanModel
         exclude = ['create_user', 'create_data', 'update_data']
@@ -31,6 +34,10 @@ class CaseTestPlanSerializer(serializers.ModelSerializer):
                 message="已经存在相同名称的case测试计划"
             )
         ]
+
+    def get_running_task_number(self, obj):
+        return CaseTestPlanTaskModel.objects.filter(test_plan_uid=obj.plan_id,
+                                                    state=CaseTestPlanTaskState.RUNNING).count()
 
     def create(self, validated_data):
         validated_data["create_user"] = self.context["request"].user

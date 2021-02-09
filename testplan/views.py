@@ -141,7 +141,9 @@ class CaseTestPlanViewSet(viewsets.ModelViewSet):
     """
     Schema = AutoSchema(manual_fields=[
         coreapi.Field(name="projectId", required=False, location="query",
-                      schema=coreschema.Integer(description='项目id'), )
+                      schema=coreschema.Integer(description='项目id'), ),
+        coreapi.Field(name="case_testplan_name", required=False, location="query",
+                      schema=coreschema.String(description='case测试计划名称'), )
     ])
     schema = Schema
     authentication_classes = (JSONWebTokenAuthentication,)
@@ -150,7 +152,9 @@ class CaseTestPlanViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        return CaseTestPlanModel.objects.filter(project_id=self.request.GET.get('projectId'))
+        return CaseTestPlanModel.objects.filter(project_id=self.request.GET.get('projectId'),
+                                                name__icontains=self.request.GET.get("case_testplan_name")).order_by(
+            '-id')
 
 
 @method_decorator(csrf_exempt, name='get')
