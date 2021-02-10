@@ -15,8 +15,8 @@ class ApiTestPlanModel(models.Model):
     interfaceIds = JSONField(verbose_name="api id 集合", help_text="api id 集合", null=False)
     project_id = models.IntegerField(verbose_name="项目id", null=False, help_text="项目id")
     create_user = models.CharField(verbose_name="创建人", max_length=10, null=False, help_text="创建人")
-    create_data = models.DateTimeField(verbose_name="创建时间", auto_now_add=True, help_text="创建时间")
-    update_data = models.DateTimeField(verbose_name="更新时间", auto_now=True, help_text="更新时间")
+    create_date = models.DateTimeField(verbose_name="创建时间", auto_now_add=True, help_text="创建时间")
+    update_date = models.DateTimeField(verbose_name="更新时间", auto_now=True, help_text="更新时间")
 
     class Meta:
         db_table = "api_test_plan"
@@ -32,8 +32,8 @@ class ApiTestPlanTaskModel(models.Model):
     api_job_number = models.IntegerField(verbose_name="api job总数", help_text="api job总数", null=True)
     success_num = models.IntegerField(verbose_name="成功条数", null=True, help_text="成功条数")
     failed_num = models.IntegerField(verbose_name="失败条数", null=True, help_text="失败条数")
-    create_data = models.DateTimeField(auto_now_add=True, verbose_name="创建时间", help_text="创建时间")
-    update_data = models.DateTimeField(auto_now=True, verbose_name="创建时间", help_text="创建时间")
+    create_date = models.DateTimeField(auto_now_add=True, verbose_name="创建时间", help_text="创建时间")
+    update_date = models.DateTimeField(auto_now=True, verbose_name="创建时间", help_text="创建时间")
     used_time = models.FloatField(verbose_name="用时", help_text="用时", null=True)
 
     class Meta:
@@ -55,8 +55,8 @@ class CaseTestPlanModel(models.Model):
     gitlab_project_name = models.CharField(max_length=100, verbose_name="gitlab项目名", help_text="gitlab项目名")
     branch_name = models.CharField(max_length=20, verbose_name="当前分支", help_text="分支名称")
     create_user = models.CharField(verbose_name="创建人", max_length=10, null=False, help_text="创建人")
-    create_data = models.DateTimeField(verbose_name="创建时间", auto_now_add=True, help_text="创建时间")
-    update_data = models.DateTimeField(verbose_name="更新时间", auto_now=True, help_text="更新时间")
+    create_date = models.DateTimeField(verbose_name="创建时间", auto_now_add=True, help_text="创建时间")
+    update_date = models.DateTimeField(verbose_name="更新时间", auto_now=True, help_text="更新时间")
 
     class Meta:
         db_table = "case_test_plan"
@@ -71,8 +71,8 @@ class CaseTestPlanTaskModel(models.Model):
     state = models.CharField(verbose_name="执行状态", max_length=10, null=True, help_text="执行状态")
     case_job_number = models.IntegerField(verbose_name="api job总数", help_text="api job总数", null=True)
     finish_num = models.IntegerField(verbose_name="成功条数", null=True, help_text="成功条数")
-    create_data = models.DateTimeField(auto_now_add=True, verbose_name="创建时间", help_text="创建时间")
-    update_data = models.DateTimeField(auto_now=True, verbose_name="创建时间", help_text="创建时间")
+    create_date = models.DateTimeField(auto_now_add=True, verbose_name="创建时间", help_text="创建时间")
+    update_date = models.DateTimeField(auto_now=True, verbose_name="创建时间", help_text="创建时间")
     used_time = models.FloatField(verbose_name="用时", help_text="用时", null=True)
 
     class Meta:

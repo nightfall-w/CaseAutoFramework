@@ -7,7 +7,7 @@ from utils.job_status_enum import CaseTestPlanTaskState
 class ApiTestPlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = ApiTestPlanModel
-        exclude = ['create_user', 'create_data', 'update_data']
+        exclude = ['create_user', 'create_date', 'update_date']
         extra_kwargs = {'plan_id': {'required': False}, 'description': {'required': False}}
         depth = 1
         validators = [
@@ -21,11 +21,17 @@ class ApiTestPlanSerializer(serializers.ModelSerializer):
 
 class CaseTestPlanSerializer(serializers.ModelSerializer):
     running_task_number = serializers.SerializerMethodField()
+    create_date_format = serializers.SerializerMethodField()
 
     class Meta:
         model = CaseTestPlanModel
-        exclude = ['create_user', 'create_data', 'update_data']
-        extra_kwargs = {'plan_id': {'required': False}, 'description': {'required': False}}
+        exclude = ['update_date', 'create_date']
+        read_only_fields = ["id", "plan_id", "create_date", "update_date"]
+        extra_kwargs = {
+            "create_user": {'required': False},
+            'plan_id': {'required': False},
+            'description': {'required': False}
+        }
         depth = 1
         validators = [
             UniqueTogetherValidator(
@@ -38,6 +44,9 @@ class CaseTestPlanSerializer(serializers.ModelSerializer):
     def get_running_task_number(self, obj):
         return CaseTestPlanTaskModel.objects.filter(test_plan_uid=obj.plan_id,
                                                     state=CaseTestPlanTaskState.RUNNING).count()
+
+    def get_create_date_format(self, obj):
+        return obj.create_date.strftime("%Y-%m-%d")
 
     def create(self, validated_data):
         validated_data["create_user"] = self.context["request"].user

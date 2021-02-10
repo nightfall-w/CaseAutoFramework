@@ -93,7 +93,7 @@ class InterfaceJobModel(models.Model):
     result = models.TextField(verbose_name="接口响应结果", null=True, help_text="接口响应结果")
     status_code = models.IntegerField(verbose_name="响应状态码", help_text="响应状态码", null=True)
     elapsed = models.FloatField(verbose_name="响应时间", null=True, help_text="响应时间")
-    create_data = models.DateTimeField(verbose_name="创建时间", auto_now_add=True, help_text="创建时间")
+    create_date = models.DateTimeField(verbose_name="创建时间", auto_now_add=True, help_text="创建时间")
 
     class Meta:
         db_table = "interface_job"

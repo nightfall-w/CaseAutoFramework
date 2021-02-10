@@ -114,7 +114,7 @@ def case_test_task_executor(case_task_id):
         case_task.save()
     # case_task = CaseTestPlanTaskModel.objects.filter(id=case_task_id).first()
     case_task.refresh_from_db()
-    used_time = case_task.update_data - case_task.create_data
+    used_time = case_task.update_date - case_task.create_date
     case_task.state = CaseTestPlanTaskState.FINISH
     case_task.used_time = used_time.total_seconds()
     case_task.save()
@@ -153,7 +153,7 @@ def case_test_job_executor(case_job_id, project_id, test_plan_uid, task_id):
                     # 已完成数等于case总数 那整个case test plan全部完成
                     case_task.state = CaseTestPlanTaskState.FINISH
                     case_task.save()
-                    used_time = case_task.update_data - case_task.create_data
+                    used_time = case_task.update_date - case_task.create_date
                     case_task.used_time = used_time.total_seconds()
                     case_task.save()
             except Exception as es:
