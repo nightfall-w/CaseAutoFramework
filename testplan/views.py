@@ -152,15 +152,16 @@ class CaseTestPlanViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        return CaseTestPlanModel.objects.filter(project_id=self.request.GET.get('projectId'),
-                                                name__icontains=self.request.GET.get('case_testplan_name',
-                                                                                     '')).order_by('-id')
+        if self.request.method == "GET":
+            return CaseTestPlanModel.objects.filter(project_id=self.request.GET.get('projectId'),
+                                                    name__icontains=self.request.GET.get('case_testplan_name',
+                                                                                         '')).order_by('-id')
+        return CaseTestPlanModel.objects.all().order_by('id')
 
     def destroy(self, request, *args, **kwargs):
         instance = CaseTestPlanModel.objects.get(id=kwargs.get('pk'))
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
-
 
 
 @method_decorator(csrf_exempt, name='get')
