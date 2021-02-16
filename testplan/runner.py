@@ -401,8 +401,6 @@ class CaseRunner:
         """
         case_test_plan = CaseTestPlanModel.objects.filter(plan_id=test_plan_task.test_plan_uid).first()
         case_paths = case_test_plan.case_paths
-        linux_case_paths = '/'.join(case_paths.split('\\'))
-        case_paths = json.loads(linux_case_paths)
         for case_path in case_paths:
             CaseJobModel.objects.create(case_task_id=test_plan_task.id, case_path=case_path,
                                         state=CaseJobState.WAITING)

@@ -217,8 +217,6 @@ class TriggerCasePlan(APIView):
         if not case_test_plan:
             return Response({"error": "testplan {} not find".format(testplan_id)}, status=status.HTTP_400_BAD_REQUEST)
         case_paths = case_test_plan.case_paths
-        linux_case_paths = '/'.join(case_paths.split('\\'))
-        case_paths = json.loads(linux_case_paths)
         case_test_plan_task = CaseTestPlanTaskModel.objects.create(test_plan_uid=testplan_id,
                                                                    state=CaseTestPlanTaskState.WAITING,
                                                                    case_job_number=len(case_paths),

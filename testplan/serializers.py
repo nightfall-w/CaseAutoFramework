@@ -42,8 +42,8 @@ class CaseTestPlanSerializer(serializers.ModelSerializer):
         ]
 
     def get_running_task_number(self, obj):
-        return CaseTestPlanTaskModel.objects.filter(test_plan_uid=obj.plan_id,
-                                                    state=CaseTestPlanTaskState.RUNNING).count()
+        return CaseTestPlanTaskModel.objects.filter(test_plan_uid=obj.plan_id).exclude(
+            state=CaseTestPlanTaskState.FINISH).count()
 
     def get_create_date_format(self, obj):
         return obj.create_date.strftime("%Y-%m-%d")
