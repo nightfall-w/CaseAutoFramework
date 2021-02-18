@@ -36,7 +36,8 @@ def branch_pull(gitlab_info, project_id, branch_name):
                                                       branch_name=branch_name)
     obj_tuple[0].status = BranchState.PULLING
     obj_tuple[0].save()
-    cache_key = gitlab_info.get('private_token') + str(project_id) + branch_name
+    cache_key = "private_token:" + gitlab_info.get('private_token') + "-" + "project_id:" + str(
+        project_id) + "-" + "branch_name:" + branch_name
     cache.set(cache_key, BranchState.PULLING)
     try:
         info = project.repository_tree(ref=branch_name, all=True, recursive=True, as_list=True)
@@ -106,7 +107,8 @@ def case_test_task_executor(case_task_id):
     case_task.state = CaseTestPlanTaskState.RUNNING
     case_task.save()
     for index, case_job in enumerate(case_jobs):
-        CaseRunner.executor(case_job=case_job, project_id=case_test_plan.project_id, test_plan_uid=case_test_plan.plan_id,
+        CaseRunner.executor(case_job=case_job, project_id=case_test_plan.project_id,
+                            test_plan_uid=case_test_plan.plan_id,
                             task_id=case_task_id)
         # case_task = CaseTestPlanTaskModel.objects.filter(id=case_task_id).first()
         case_task.refresh_from_db()

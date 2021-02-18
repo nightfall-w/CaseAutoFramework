@@ -28,7 +28,8 @@ class ResultConsumer(WebsocketConsumer):
                 break
             else:
                 private_token = decrypt_token(token)
-                cache_key = private_token + str(project_id) + branch_name
+                cache_key = "private_token:" + private_token + "-" + "project_id:" + str(
+                    project_id) + "-" + "branch_name:" + branch_name
                 branch_status = cache.get(cache_key)
                 progress = cache.get(cache_key + "progress")
                 if not branch_status:
