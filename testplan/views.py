@@ -190,7 +190,7 @@ class CaseTask(APIView):
         case_tasks = CaseTestPlanTaskModel.objects.filter(test_plan_uid=case_test_plan_uid).order_by('-id')
         page_case_tasks = pg.paginate_queryset(queryset=case_tasks, request=request, view=self)
         case_tasks_serializer = CaseTaskSerializer(page_case_tasks, many=True)
-        return Response(case_tasks_serializer.data)
+        return pg.get_paginated_response(case_tasks_serializer.data)
 
 
 @method_decorator(csrf_exempt, name='post')
