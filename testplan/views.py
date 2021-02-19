@@ -179,6 +179,7 @@ class CaseTask(APIView):
     ])
     schema = Schema
     permission_classes = (permissions.IsAuthenticated,)
+    authentication_classes = (JSONWebTokenAuthentication,)
 
     def get(self, request):
         receive_data = request.GET
@@ -186,7 +187,7 @@ class CaseTask(APIView):
         if not case_test_plan_uid:
             return Response({"error": "缺少必要参数caseTestPlanUid"}, status=status.HTTP_400_BAD_REQUEST)
         pg = LimitOffsetPagination()
-        case_tasks = CaseTestPlanTaskModel.objects.filter(test_plan_uid=case_test_plan_uid)
+        case_tasks = CaseTestPlanTaskModel.objects.filter(test_plan_uid=case_test_plan_uid).order_by('-id')
         page_case_tasks = pg.paginate_queryset(queryset=case_tasks, request=request, view=self)
         case_tasks_serializer = CaseTaskSerializer(page_case_tasks, many=True)
         return Response(case_tasks_serializer.data)

@@ -18,10 +18,9 @@ class StatusManager(metaclass=ABCMeta):
 class CaseStatusManager(StatusManager):
 
     def get_task_result(self, case_test_plan_uid):
-        return CaseTestPlanTaskModel.objects.filter(test_plan_uid=case_test_plan_uid).values(
-            'test_plan_uid', 'id',
-            'state',
-            'finish_num')
+        return CaseTestPlanTaskModel.objects.filter(test_plan_uid=case_test_plan_uid).order_by('-id').values(
+            'test_plan_uid', 'id', 'state',
+            'finish_num', 'create_date', 'used_time')
 
     def get_job_result(self, case_task_id):
         return CaseJobModel.objects.filter(case_task_id=case_task_id).values('id', 'state', 'result', 'report_path')
@@ -29,8 +28,9 @@ class CaseStatusManager(StatusManager):
 
 class ApiStatusManager(StatusManager):
     def get_task_result(self, api_test_plan_uid):
-        return ApiTestPlanTaskModel.objects.filter(test_plan_uid=api_test_plan_uid).values('test_plan_uid', 'state',
-                                                                                           'success_num', 'failed_num')
+        return ApiTestPlanTaskModel.objects.filter(test_plan_uid=api_test_plan_uid).order_by('-id').values(
+            'test_plan_uid', 'state',
+            'success_num', 'failed_num')
 
     def get_job_result(self, api_task_id):
         return InterfaceJobModel.objects.filter(api_test_plan_task_id=api_task_id).values('interface_id',

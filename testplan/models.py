@@ -48,7 +48,7 @@ class CaseTestPlanModel(models.Model):
     name = models.CharField(verbose_name="计划名称", max_length=30, null=False, help_text="测试计划名")
     description = models.TextField(verbose_name="描述", null=True, blank=True, default='', help_text="描述说明")
     parallel = models.BooleanField(verbose_name="是否并行方式执行", default=False, help_text="是否并行执行")
-    plan_id = models.CharField(verbose_name="计划id", max_length=50, null=False, help_text="计划编号", default=uuid.uuid4())
+    plan_id = models.CharField(verbose_name="计划id", max_length=50, null=False, help_text="计划编号")
     case_paths = JSONField(verbose_name="case路径集合", help_text="case路径集合", null=False)
     project_id = models.IntegerField(verbose_name="项目id", null=False, help_text="项目id")
     gitlab_url = models.CharField(max_length=100, verbose_name="gitlab地址", help_text="gitlab地址")
@@ -69,7 +69,7 @@ class CaseTestPlanModel(models.Model):
 class CaseTestPlanTaskModel(models.Model):
     test_plan_uid = models.CharField(verbose_name="测试计划uid", max_length=50, null=False, help_text="测试计划uid")
     state = models.CharField(verbose_name="执行状态", max_length=10, null=True, help_text="执行状态")
-    case_job_number = models.IntegerField(verbose_name="api job总数", help_text="api job总数", null=True)
+    case_job_number = models.IntegerField(verbose_name="case job总数", help_text="case job总数", null=True)
     finish_num = models.IntegerField(verbose_name="成功条数", null=True, help_text="成功条数")
     create_date = models.DateTimeField(auto_now_add=True, verbose_name="创建时间", help_text="创建时间")
     update_date = models.DateTimeField(auto_now=True, verbose_name="创建时间", help_text="创建时间")

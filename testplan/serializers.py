@@ -1,3 +1,5 @@
+import uuid
+
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
@@ -51,6 +53,7 @@ class CaseTestPlanSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data["create_user"] = self.context["request"].user
+        validated_data["plan_id"] = uuid.uuid4()
         return CaseTestPlanModel.objects.create(**validated_data)
 
 
