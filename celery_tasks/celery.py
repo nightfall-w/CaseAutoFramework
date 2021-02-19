@@ -4,6 +4,7 @@ import os
 
 from celery import Celery
 from django.utils import timezone
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'automation.settings')
 
 app = Celery('automation')

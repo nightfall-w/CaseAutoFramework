@@ -1,9 +1,11 @@
 import json
 import time
+
 from channels.generic.websocket import WebsocketConsumer
 from django.core.cache import cache
-from utils.encryption import decrypt_token
+
 from case.models import GitCaseModel, GitlabModel
+from utils.encryption import decrypt_token
 
 
 class ResultConsumer(WebsocketConsumer):

@@ -5,6 +5,7 @@ import os
 import time
 
 import redis
+from django.core.cache import cache
 
 from automation.settings import logger, BASE_DIR
 from case.models import GitCaseModel
@@ -14,7 +15,6 @@ from testplan.runner import ApiRunner, data_drive, CaseRunner
 from utils.gitlab_tool import GitlabAPI
 from utils.job_status_enum import CaseTestPlanTaskState, BranchState
 from utils.redis_tool import RedisPoll
-from django.core.cache import cache
 
 
 # 由于是递归方式下载的所以要先创建项目相应目录

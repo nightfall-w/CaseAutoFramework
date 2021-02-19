@@ -1,8 +1,8 @@
 import json
 
-import requests
 import coreapi
 import coreschema
+import requests
 from rest_framework import viewsets, pagination, permissions, status
 from rest_framework.response import Response
 from rest_framework.schemas import AutoSchema

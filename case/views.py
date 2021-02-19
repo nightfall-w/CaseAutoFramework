@@ -1,6 +1,6 @@
 import json
 import os
-from requests.exceptions import MissingSchema
+
 import coreapi
 import coreschema
 from django.conf import settings
@@ -8,6 +8,7 @@ from django.db import IntegrityError
 from django.http import JsonResponse, HttpResponse
 from gitlab.exceptions import GitlabAuthenticationError
 from requests.exceptions import ConnectTimeout
+from requests.exceptions import MissingSchema
 from rest_framework import permissions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.schemas import AutoSchema
