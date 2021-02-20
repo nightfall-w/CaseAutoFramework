@@ -9,9 +9,9 @@ application = ProtocolTypeRouter({
             testplan.routing.websocket_urlpatterns
         )
     ),
-    'websocket': AuthMiddlewareStack(
-        URLRouter(
-            case.routing.websocket_urlpatterns
-        )
-    ),
+    # 'websocket2': AuthMiddlewareStack(
+    #     URLRouter(
+    #         case.routing.websocket_urlpatterns
+    #     )
+    # ),
 })

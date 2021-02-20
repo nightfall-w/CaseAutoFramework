@@ -17,13 +17,16 @@ class StatusManager(metaclass=ABCMeta):
 
 class CaseStatusManager(StatusManager):
 
-    def get_task_result(self, case_test_plan_uid):
-        return CaseTestPlanTaskModel.objects.filter(test_plan_uid=case_test_plan_uid).order_by('-id').values(
+    def get_task_result(self, request_data):
+        return CaseTestPlanTaskModel.objects.filter(test_plan_uid=request_data.get('case_test_plan_uid')).order_by(
+            '-id').values(
             'test_plan_uid', 'id', 'state',
-            'finish_num', 'create_date', 'used_time')
+            'finish_num', 'create_date', 'used_time')[request_data.get('offset'):request_data.get('limit')]
 
-    def get_job_result(self, case_task_id):
-        return CaseJobModel.objects.filter(case_task_id=case_task_id).values('id', 'state', 'result', 'report_path')
+    def get_job_result(self, request_data):
+        return CaseJobModel.objects.filter(case_task_id=request_data.get('case_task_id')).values('id', 'state',
+                                                                                                 'result',
+                                                                                                 'report_path')
 
 
 class ApiStatusManager(StatusManager):
@@ -64,7 +67,7 @@ def adapter(receive_data):
             logger.error(error_data)
             send_msg = {"success": False, "error": error_data}
             return send_msg
-        return {"success": True, "data": list(result)}
+        return {"success": True, "mode": "task", "data": list(result)}
     except Exception as es:
         logger.error(str(es))
         send_msg = {"success": False, "error": str(es)}

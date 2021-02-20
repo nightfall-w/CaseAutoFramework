@@ -3,6 +3,7 @@ import time
 from channels.generic.websocket import WebsocketConsumer
 
 from testplan.result import adapter
+from utils.data_processor import DateEncoder
 
 
 class ResultConsumer(WebsocketConsumer):
@@ -21,5 +22,5 @@ class ResultConsumer(WebsocketConsumer):
             return False
         while True:
             send_msg = adapter(text_data_json)
-            self.send(text_data=json.dumps(send_msg))
+            self.send(text_data=json.dumps(send_msg, cls=DateEncoder))
             time.sleep(1)

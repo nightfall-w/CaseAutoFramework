@@ -58,10 +58,15 @@ class CaseTestPlanSerializer(serializers.ModelSerializer):
 
 
 class CaseTaskSerializer(serializers.ModelSerializer):
+    create_date = serializers.SerializerMethodField()
+
     class Meta:
         model = CaseTestPlanTaskModel
         fields = "__all__"
         depth = 1
+
+    def get_create_date(self, obj):
+        return obj.create_date.strftime("%Y-%m-%d %H:%M:%S")
 
 
 class InterfaceTaskSerializer(serializers.ModelSerializer):
