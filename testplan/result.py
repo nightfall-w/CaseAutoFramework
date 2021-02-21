@@ -16,7 +16,6 @@ class StatusManager(metaclass=ABCMeta):
 
 
 class CaseStatusManager(StatusManager):
-
     def get_task_result(self, request_data):
         return CaseTestPlanTaskModel.objects.filter(test_plan_uid=request_data.get('case_test_plan_uid')).order_by(
             '-id').values(
@@ -24,7 +23,8 @@ class CaseStatusManager(StatusManager):
             'finish_num', 'create_date', 'used_time')[request_data.get('offset'):request_data.get('limit')]
 
     def get_job_result(self, request_data):
-        return CaseJobModel.objects.filter(case_task_id=request_data.get('case_task_id')).values('id', 'state',
+        return CaseJobModel.objects.filter(case_task_id=request_data.get('case_task_id')).values('id',
+                                                                                                 'case_path' 'state',
                                                                                                  'result',
                                                                                                  'report_path')
 
@@ -59,15 +59,24 @@ def adapter(receive_data):
             send_msg = {"success": False, "error": error_data}
             return send_msg
         elif mode_type == "api":
-            result = ApiStatusManager().get_task_result(value)
+            if task_or_job == "task":
+                result = ApiStatusManager().get_task_result(value)
+                return {"success": True, "mode": "task", "data": list(result)}
+            elif task_or_job == "job":
+                result = ApiStatusManager().get_job_result(value)
+                return {"success": True, "mode": "job", "data": list(result)}
         elif mode_type == "case":
-            result = CaseStatusManager().get_task_result(value)
+            if task_or_job == "task":
+                result = CaseStatusManager().get_task_result(value)
+                return {"success": True, "mode": "task", "data": list(result)}
+            elif task_or_job == "job":
+                result = CaseStatusManager().get_job_result(value)
+                return {"success": True, "mode": "job", "data": list(result)}
         else:
             error_data = 'Illegal parameter value： {}'.format(mode_type)
             logger.error(error_data)
             send_msg = {"success": False, "error": error_data}
             return send_msg
-        return {"success": True, "mode": "task", "data": list(result)}
     except Exception as es:
         logger.error(str(es))
         send_msg = {"success": False, "error": str(es)}
