@@ -42,7 +42,7 @@ class ApiTestPlanViewSet(viewsets.ModelViewSet):
         【创建Api测试计划】
         """
         try:
-            projectId = request.data.get('project', None)
+            projectId = request.data.get('project_id', None)
             interfaceIds = json.loads(request.data.get('interfaceIds', "[]"))
             test_plan_name = request.data.get("name", None)
             description = request.data.get('description', '')
@@ -132,7 +132,7 @@ class TriggerApiPlan(APIView):
                                                                  state=ApiTestPlanTaskState.WAITING, api_job_number=0,
                                                                  success_num=0, failed_num=0)
         # 使用celery task 处理testplan runner
-        api_testplan_executor.delay(testplan_id, interfaceIds, api_test_plan_task.id)
+        api_testplan_executor(testplan_id, interfaceIds, api_test_plan_task.id)
         return Response({"success": True})
 
 

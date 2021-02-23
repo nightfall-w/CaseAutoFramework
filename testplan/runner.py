@@ -77,14 +77,14 @@ def get_all_extracts(test_plan_id):
 def data_drive(interfaceIds, plan_id, api_test_plan_task_id):
     for interfaceId in interfaceIds:
         interface = InterfaceModel.objects.get(id=interfaceId)
-        if not interface.parameters or not json.loads(interface.parameters):  # api没有测试数据集  直接创建api job
+        if not interface.parameters:  # api没有测试数据集  直接创建api job
             InterfaceJobModel.objects.create(interfaceType=InterFaceType.INSTANCE.value, interface_id=interfaceId,
                                              test_plan_id=plan_id, api_test_plan_task_id=api_test_plan_task_id,
                                              state=ApiJobState.WAITING)
             update_api_total_number(api_test_plan_task_id=api_test_plan_task_id, add_num=1)
 
         else:  # api有测试数据集， 解析测试数据
-            parameters = json.loads(interface.parameters)
+            parameters = interface.parameters
             items, key_list = parse_parameters(parameters)
             update_api_total_number(api_test_plan_task_id=api_test_plan_task_id, add_num=len(items))
             for item in items:
@@ -116,22 +116,27 @@ def data_drive(interfaceIds, plan_id, api_test_plan_task_id):
                         if '$%s' % key in interfaceCache.desc:
                             interfaceCache.desc = interfaceCache.desc.replace('$%s' % key, item[keys_index][key_index],
                                                                               10)
-                        if '$%s' % key in interfaceCache.headers:
-                            interfaceCache.headers = interfaceCache.headers.replace('$%s' % key,
-                                                                                    item[keys_index][key_index], 10)
-                        if '$%s' % key in interfaceCache.formData:
-                            interfaceCache.formData = interfaceCache.formData.replace('$%s' % key,
-                                                                                      item[keys_index][key_index], 10)
-                        if '$%s' % key in interfaceCache.urlencoded:
-                            interfaceCache.urlencoded = interfaceCache.urlencoded.replace('$%s' % key,
-                                                                                          item[keys_index][key_index],
-                                                                                          10)
-                        if '$%s' % key in interfaceCache.raw:
-                            interfaceCache.raw = interfaceCache.raw.replace('$%s' % key, item[keys_index][key_index],
-                                                                            10)
-                        if '$%s' % key in interfaceCache.asserts:
-                            interfaceCache.asserts = interfaceCache.asserts.replace('$%s' % key,
-                                                                                    item[keys_index][key_index], 10)
+                        if '$%s' % key in json.dumps(interfaceCache.headers):
+                            interfaceCache.headers = json.dumps(interfaceCache.headers).replace('$%s' % key,
+                                                                                                item[keys_index][
+                                                                                                    key_index], 10)
+                        if '$%s' % key in json.dumps(interfaceCache.formData):
+                            interfaceCache.formData = json.dumps(interfaceCache.formData).replace('$%s' % key,
+                                                                                                  item[keys_index][
+                                                                                                      key_index], 10)
+                        if '$%s' % key in json.dumps(interfaceCache.urlencoded):
+                            interfaceCache.urlencoded = json.dumps(interfaceCache.urlencoded).replace('$%s' % key,
+                                                                                                      item[keys_index][
+                                                                                                          key_index],
+                                                                                                      10)
+                        if '$%s' % key in json.dumps(interfaceCache.raw):
+                            interfaceCache.raw = json.dumps(interfaceCache.raw).replace('$%s' % key,
+                                                                                        item[keys_index][key_index],
+                                                                                        10)
+                        if '$%s' % key in json.dumps(interfaceCache.asserts):
+                            interfaceCache.asserts = json.dumps(interfaceCache.asserts).replace('$%s' % key,
+                                                                                                item[keys_index][
+                                                                                                    key_index], 10)
 
                         interfaceCache.save()
                 InterfaceJobModel.objects.create(interfaceType=InterFaceType.CACHE.value,
@@ -176,8 +181,7 @@ def assert_delimiter(key_str, response):
         if hierarchy[0] == 'status_code':
             result = response.status_code
             return result
-        response_json = json.loads(response.text)
-        result = response_json
+        result = json.loads(response.text)
         for tier in hierarchy:
             try:
                 tier = int(tier)
@@ -233,7 +237,7 @@ class ApiRunner:
         请求处理器
         """
         # 处理断言
-        for _assert in json.loads(interface.asserts):
+        for _assert in interface.asserts:
             if _assert['assertType'] == "regular":
                 # 正则判断逻辑
                 if not isRegular(_assert['expressions']):
@@ -287,7 +291,7 @@ class ApiRunner:
 
         # 处理提取规则
         extracts_result = {}  # 提取结果的集合
-        for extract in json.loads(interface.extract):
+        for extract in interface.extract:
             if extract['extractType'] == "regular":
                 if not isRegular(extract['expressions']):
                     logger.error(
@@ -331,29 +335,30 @@ class ApiRunner:
                 interface.name = interface.name.replace('$%s' % key, value, 10)
             if '$%s' % key in interface.desc:
                 interface.desc = interface.desc.replace('$%s' % key, value, 10)
-            if '$%s' % key in interface.headers:
-                interface.headers = interface.headers.replace('$%s' % key, value, 10)
-            if '$%s' % key in interface.formData:
-                interface.formData = interface.formData.replace('$%s' % key, value, 10)
-            if '$%s' % key in interface.urlencoded:
-                interface.urlencoded = interface.urlencoded.replace('$%s' % key, value, 10)
-            if '$%s' % key in interface.raw:
-                interface.raw = interface.raw.replace('$%s' % key, value, 10)
-            if '$%s' % key in interface.asserts:
-                interface.asserts = interface.asserts.replace('$%s' % key, value, 10)
+            if '$%s' % key in json.dumps(interface.headers):
+                interface.headers = json.dumps(interface.headers).replace('$%s' % key, value, 10)
+            if '$%s' % key in json.dumps(interface.formData):
+                interface.formData = json.dumps(interface.formData).replace('$%s' % key, value, 10)
+            if '$%s' % key in json.dumps(interface.urlencoded):
+                interface.urlencoded = json.dumps(interface.urlencoded).replace('$%s' % key, value, 10)
+            if '$%s' % key in json.dumps(interface.raw):
+                interface.raw = json.dumps(interface.raw).replace('$%s' % key, value, 10)
+            if '$%s' % key in json.dumps(interface.asserts):
+                interface.asserts = json.dumps(interface.asserts).replace('$%s' % key, value, 10)
         interface.save()
 
-        headers = json.loads(interface.headers)  # 请求头
+        headers = interface.headers  # 请求头
         # 根据请求方式动态选择requests的请求方法
         requests_fun = getattr(self.session, interface.get_request_mode_display().lower())
-        if json.loads(interface.formData):  # form-data文件请求
-            data = json.loads(interface.formData)
+        if interface.formData:  # form-data文件请求
+            data = interface.formData
             response = requests_fun(url=interface.addr, headers=headers, data=data)
-        elif json.loads(interface.urlencoded):  # form 表单
-            data = json.loads(interface.urlencoded)
+        elif interface.urlencoded:  # form 表单
+            data = interface.urlencoded
             response = requests_fun(url=interface.addr, headers=headers, params=data)
-        elif json.loads(interface.raw):  # json请求
-            response = requests_fun(url=interface.addr, headers=headers, data=interface.raw.encode("utf-8"))
+        elif interface.raw:  # json请求
+            data = json.dumps(interface.raw).encode("utf-8")
+            response = requests_fun(url=interface.addr, headers=headers, data=data)
         else:
             response = requests_fun(url=interface.addr, headers=headers)
         extracts_result = self.dispose_response(interface=interface, response=response)
