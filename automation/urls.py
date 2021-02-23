@@ -8,7 +8,7 @@ from automation.settings import MEDIA_ROOT
 from case.views import GitLabAddToken
 from interface.views import InterfaceViewSet, InterfaceTestViewSet
 from project.views import ProjectViewSet
-from testplan.views import ApiTestPlanViewSet, CaseTestPlanViewSet
+from testplan.views import ApiTestPlanViewSet, CaseTestPlanViewSet, CaseJobViewSet
 
 router = DefaultRouter()
 router.register(r'project', ProjectViewSet, basename='api-project')
@@ -16,6 +16,7 @@ router.register(r'interface', InterfaceViewSet, basename='api-interface')
 router.register(r'interfaceTest', InterfaceTestViewSet, basename='api-interface-test')
 router.register(r'apiTestPlan', ApiTestPlanViewSet, basename='api-test-plan')
 router.register(r'caseTestPlan', CaseTestPlanViewSet, basename='case-test-plan')
+router.register(r'caseJob', CaseJobViewSet, basename='case-job')
 router.register(r'gitlabAuthentication', GitLabAddToken, basename='api-case')
 # router.register(r'case', CaseViewSet, basename='api-case')
 # router.register(r'caseType', CaseTypeViewSet, basename='api-case-type')

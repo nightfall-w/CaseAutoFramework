@@ -19,7 +19,8 @@ from testplan.models import ApiTestPlanModel, ApiTestPlanTaskModel, CaseTestPlan
     CaseJobModel
 from utils.job_status_enum import ApiTestPlanTaskState, CaseTestPlanTaskState
 from .runner import CaseRunner
-from .serializers import ApiTestPlanSerializer, CaseTestPlanSerializer, CaseTaskSerializer, InterfaceTaskSerializer
+from .serializers import ApiTestPlanSerializer, CaseTestPlanSerializer, CaseTaskSerializer, InterfaceTaskSerializer, \
+    CaseJobSerializer
 
 
 class ApiTestPlanViewSet(viewsets.ModelViewSet):
@@ -191,6 +192,21 @@ class CaseTask(APIView):
         page_case_tasks = pg.paginate_queryset(queryset=case_tasks, request=request, view=self)
         case_tasks_serializer = CaseTaskSerializer(page_case_tasks, many=True)
         return pg.get_paginated_response(case_tasks_serializer.data)
+
+
+class CaseJobViewSet(viewsets.ModelViewSet):
+    Schema = AutoSchema(manual_fields=[
+        coreapi.Field(name="task_id", required=False, location="query",
+                      schema=coreschema.Integer(description='case task id'), ),
+    ])
+    schema = Schema
+    authentication_classes = (JSONWebTokenAuthentication,)
+    pagination_class = pagination.LimitOffsetPagination
+    serializer_class = CaseJobSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        return CaseJobModel.objects.filter(case_task_id=self.request.GET.get('task_id'))
 
 
 @method_decorator(csrf_exempt, name='post')

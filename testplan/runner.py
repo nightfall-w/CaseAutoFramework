@@ -431,7 +431,8 @@ class CaseRunner:
             out = p.stdout
             read_data = out.read().decode("utf-8", "ignore")
             case_job.log = read_data
-            case_job.report_path = '{}/{}'.format(report_path, report_name)
+            case_job.report_path = '/media/html-report/{}/{}/{}/{}'.format(project_id, test_plan_uid, task_id,
+                                                                           report_name)
             case_result = case_job.log.split('\n')[-2]
             case_job.result = case_result.replace('=', '').strip(' ')
             case_job.state = CaseJobState.FINISH
