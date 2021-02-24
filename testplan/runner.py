@@ -67,8 +67,9 @@ def parse_parameters(parameters):
     return items, key_list
 
 
-def get_all_extracts(test_plan_id):
-    extracts_list = InterfaceJobModel.objects.filter(test_plan_id=test_plan_id, extracts__isnull=False).values_list(
+def get_all_extracts(test_plan_id, task_id):
+    extracts_list = InterfaceJobModel.objects.filter(test_plan_id=test_plan_id, api_test_plan_task_id=task_id,
+                                                     extracts__isnull=False).values_list(
         'extracts', flat=True)
     extracts_dict = reduce(merge, extracts_list)
     return extracts_dict
@@ -117,26 +118,33 @@ def data_drive(interfaceIds, plan_id, api_test_plan_task_id):
                             interfaceCache.desc = interfaceCache.desc.replace('$%s' % key, item[keys_index][key_index],
                                                                               10)
                         if '$%s' % key in json.dumps(interfaceCache.headers):
-                            interfaceCache.headers = json.dumps(interfaceCache.headers).replace('$%s' % key,
-                                                                                                item[keys_index][
-                                                                                                    key_index], 10)
+                            interfaceCache.headers = json.loads(json.dumps(interfaceCache.headers).replace('$%s' % key,
+                                                                                                           item[
+                                                                                                               keys_index][
+                                                                                                               key_index],
+                                                                                                           10))
                         if '$%s' % key in json.dumps(interfaceCache.formData):
-                            interfaceCache.formData = json.dumps(interfaceCache.formData).replace('$%s' % key,
-                                                                                                  item[keys_index][
-                                                                                                      key_index], 10)
+                            interfaceCache.formData = json.loads(
+                                json.dumps(interfaceCache.formData).replace('$%s' % key,
+                                                                            item[keys_index][
+                                                                                key_index], 10))
                         if '$%s' % key in json.dumps(interfaceCache.urlencoded):
-                            interfaceCache.urlencoded = json.dumps(interfaceCache.urlencoded).replace('$%s' % key,
-                                                                                                      item[keys_index][
-                                                                                                          key_index],
-                                                                                                      10)
+                            interfaceCache.urlencoded = json.loads(
+                                json.dumps(interfaceCache.urlencoded).replace('$%s' % key,
+                                                                              item[keys_index][
+                                                                                  key_index],
+                                                                              10))
                         if '$%s' % key in json.dumps(interfaceCache.raw):
-                            interfaceCache.raw = json.dumps(interfaceCache.raw).replace('$%s' % key,
-                                                                                        item[keys_index][key_index],
-                                                                                        10)
+                            interfaceCache.raw = json.loads(json.dumps(interfaceCache.raw).replace('$%s' % key,
+                                                                                                   item[keys_index][
+                                                                                                       key_index],
+                                                                                                   10))
                         if '$%s' % key in json.dumps(interfaceCache.asserts):
-                            interfaceCache.asserts = json.dumps(interfaceCache.asserts).replace('$%s' % key,
-                                                                                                item[keys_index][
-                                                                                                    key_index], 10)
+                            interfaceCache.asserts = json.loads(json.dumps(interfaceCache.asserts).replace('$%s' % key,
+                                                                                                           item[
+                                                                                                               keys_index][
+                                                                                                               key_index],
+                                                                                                           10))
 
                         interfaceCache.save()
                 InterfaceJobModel.objects.create(interfaceType=InterFaceType.CACHE.value,
@@ -166,7 +174,7 @@ def assert_regular(pattern, str_obj):
     if result is None:
         return False
     try:
-        result.group(1)
+        return result.group(1)
     except IndexError as es:
         logger.warning(es)
         return result.group(0)
@@ -326,8 +334,7 @@ class ApiRunner:
             interface = InterfaceModel.objects.get(id=interface_job.interface_id)
         else:
             interface = InterfaceCacheModel.objects.get(id=interface_job.interface_id)
-
-        extracts_dict = get_all_extracts(interface_job.test_plan_id)
+        extracts_dict = get_all_extracts(interface_job.test_plan_id, interface_job.api_test_plan_task_id)
         for key, value in extracts_dict.items():
             if '$%s' % key in interface.addr:
                 interface.addr = interface.addr.replace('$%s' % key, value, 10)
@@ -362,7 +369,7 @@ class ApiRunner:
         else:
             response = requests_fun(url=interface.addr, headers=headers)
         extracts_result = self.dispose_response(interface=interface, response=response)
-        InterfaceJobModel.objects.filter(id=interface_job.id).update(extracts=json.dumps(extracts_result))
+        InterfaceJobModel.objects.filter(id=interface_job.id).update(extracts=extracts_result)
 
     def distributor(self):
         # 分配器
@@ -426,7 +433,7 @@ class CaseRunner:
         report_name = case_job.case_path.split('/')[-1].split('.')[0] + '.html'
         report_path = os.path.join(MEDIA_ROOT, 'html-report', str(project_id), test_plan_uid, str(task_id))
         if not os.path.exists(report_path):
-            os.mkdir(report_path)
+            os.makedirs(report_path)
         try:
             p = subprocess.Popen(
                 'pytest {} -vv -s --html={} --self-contained-html'.format(
