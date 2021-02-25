@@ -75,14 +75,41 @@ def get_all_extracts(test_plan_id, task_id):
     return extracts_dict
 
 
+def is_exist_variable(interface_instance):
+    is_exist = False
+    for field in interface_instance._meta.fields:
+        field_value = getattr(interface_instance, field.name)
+        if '$' in json.dumps(field_value):
+            is_exist = True
+            break
+    return is_exist
+
+
 def data_drive(interfaceIds, plan_id, api_test_plan_task_id):
     for interfaceId in interfaceIds:
         interface = InterfaceModel.objects.get(id=interfaceId)
         if not interface.parameters:  # api没有测试数据集  直接创建api job
-            InterfaceJobModel.objects.create(interfaceType=InterFaceType.INSTANCE.value, interface_id=interfaceId,
-                                             test_plan_id=plan_id, api_test_plan_task_id=api_test_plan_task_id,
-                                             state=ApiJobState.WAITING)
-            update_api_total_number(api_test_plan_task_id=api_test_plan_task_id, add_num=1)
+            if is_exist_variable(interface):
+                interfaceCache = InterfaceCacheModel.objects.create(project=interface.project,
+                                                                    name=interface.name, desc=interface.desc,
+                                                                    addr=interface.addr,
+                                                                    request_mode=interface.request_mode,
+                                                                    headers=interface.headers,
+                                                                    formData=interface.formData,
+                                                                    urlencoded=interface.urlencoded,
+                                                                    raw=interface.raw,
+                                                                    asserts=interface.asserts,
+                                                                    extract=interface.extract)
+                InterfaceJobModel.objects.create(interfaceType=InterFaceType.CACHE.value,
+                                                 interface_id=interfaceCache.id,
+                                                 test_plan_id=plan_id, api_test_plan_task_id=api_test_plan_task_id,
+                                                 state=ApiJobState.WAITING)
+                update_api_total_number(api_test_plan_task_id=api_test_plan_task_id, add_num=1)
+            else:
+                InterfaceJobModel.objects.create(interfaceType=InterFaceType.INSTANCE.value, interface_id=interfaceId,
+                                                 test_plan_id=plan_id, api_test_plan_task_id=api_test_plan_task_id,
+                                                 state=ApiJobState.WAITING)
+                update_api_total_number(api_test_plan_task_id=api_test_plan_task_id, add_num=1)
 
         else:  # api有测试数据集， 解析测试数据
             parameters = interface.parameters
@@ -337,21 +364,21 @@ class ApiRunner:
         extracts_dict = get_all_extracts(interface_job.test_plan_id, interface_job.api_test_plan_task_id)
         for key, value in extracts_dict.items():
             if '$%s' % key in interface.addr:
-                interface.addr = interface.addr.replace('$%s' % key, value, 10)
+                interface.addr = interface.addr.replace('$%s' % key, str(value), 10)
             if '$%s' % key in interface.name:
-                interface.name = interface.name.replace('$%s' % key, value, 10)
+                interface.name = interface.name.replace('$%s' % key, str(value), 10)
             if '$%s' % key in interface.desc:
-                interface.desc = interface.desc.replace('$%s' % key, value, 10)
+                interface.desc = interface.desc.replace('$%s' % key, str(value), 10)
             if '$%s' % key in json.dumps(interface.headers):
-                interface.headers = json.dumps(interface.headers).replace('$%s' % key, value, 10)
+                interface.headers = json.loads(json.dumps(interface.headers).replace('$%s' % key, str(value), 10))
             if '$%s' % key in json.dumps(interface.formData):
-                interface.formData = json.dumps(interface.formData).replace('$%s' % key, value, 10)
+                interface.formData = json.loads(json.dumps(interface.formData).replace('$%s' % key, str(value), 10))
             if '$%s' % key in json.dumps(interface.urlencoded):
-                interface.urlencoded = json.dumps(interface.urlencoded).replace('$%s' % key, value, 10)
+                interface.urlencoded = json.loads(json.dumps(interface.urlencoded).replace('$%s' % key, str(value), 10))
             if '$%s' % key in json.dumps(interface.raw):
-                interface.raw = json.dumps(interface.raw).replace('$%s' % key, value, 10)
+                interface.raw = json.loads(json.dumps(interface.raw).replace('$%s' % key, str(value), 10))
             if '$%s' % key in json.dumps(interface.asserts):
-                interface.asserts = json.dumps(interface.asserts).replace('$%s' % key, value, 10)
+                interface.asserts = json.loads(json.dumps(interface.asserts).replace('$%s' % key, str(value), 10))
         interface.save()
 
         headers = interface.headers  # 请求头
