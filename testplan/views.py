@@ -25,8 +25,10 @@ from .serializers import ApiTestPlanSerializer, CaseTestPlanSerializer, CaseTask
 
 class ApiTestPlanViewSet(viewsets.ModelViewSet):
     Schema = AutoSchema(manual_fields=[
-        coreapi.Field(name="projectId", required=False, location="query",
-                      schema=coreschema.Integer(description='项目id'), )
+        coreapi.Field(name="projectId", required=True, location="query",
+                      schema=coreschema.Integer(description='项目id'), ),
+        coreapi.Field(name="api_testplan_name", required=False, location="query",
+                      schema=coreschema.String(description='api测试计划名称'), )
     ])
     schema = Schema
     authentication_classes = (JSONWebTokenAuthentication,)
@@ -35,43 +37,22 @@ class ApiTestPlanViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        return ApiTestPlanModel.objects.filter(project_id=self.request.GET.get('projectId'))
-
-    def create(self, request, *args, **kwargs):
-        """
-        【创建Api测试计划】
-        """
-        try:
-            projectId = request.data.get('project_id', None)
-            interfaceIds = json.loads(request.data.get('interfaceIds', "[]"))
-            test_plan_name = request.data.get("name", None)
-            description = request.data.get('description', '')
-        except Exception as es:
-            logger.error(es)
-            return Response({"error": "不符合格式的接口列表"})
-        if not projectId:
-            return Response({"error": "项目Id不能为空"})
-        if not test_plan_name:
-            return Response({"error": "测试计划名不能为空"})
-        if not interfaceIds:
-            return Response({"error": "接口id未提供"})
-        for _id in interfaceIds:
-            interfaceObj = InterfaceModel.objects.filter(id=_id).first()
-            if not interfaceObj:
-                return Response({"error": "接口id为{}的api不存在".format(_id)})
-        plan_id = uuid.uuid4()
-        ApiTestPlanModel.objects.create(name=test_plan_name, plan_id=plan_id, description=description,
-                                        project_id=int(projectId),
-                                        interfaceIds=json.dumps(interfaceIds),
-                                        create_user=request.user, )
-        return Response(
-            {'success': True, "test_plan_name": test_plan_name, "interfaceIds": interfaceIds, "projectId": projectId})
+        if self.request.method == "GET":
+            return ApiTestPlanModel.objects.filter(project_id=self.request.GET.get('projectId'),
+                                                   name__icontains=self.request.GET.get('api_testplan_name',
+                                                                                        '')).order_by('-id')
+        return ApiTestPlanModel.objects.all().order_by('id')
 
     def list(self, request, *args, **kwargs):
         api_test_plans = self.get_queryset()
         page = self.paginate_queryset(api_test_plans)
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = ApiTestPlanModel.objects.get(id=kwargs.get('pk'))
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @method_decorator(csrf_exempt, name='get')
@@ -141,7 +122,7 @@ class CaseTestPlanViewSet(viewsets.ModelViewSet):
     【case测试计划】
     """
     Schema = AutoSchema(manual_fields=[
-        coreapi.Field(name="projectId", required=False, location="query",
+        coreapi.Field(name="projectId", required=True, location="query",
                       schema=coreschema.Integer(description='项目id'), ),
         coreapi.Field(name="case_testplan_name", required=False, location="query",
                       schema=coreschema.String(description='case测试计划名称'), )
