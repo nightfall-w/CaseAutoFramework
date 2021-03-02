@@ -3,7 +3,7 @@ import uuid
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from interface.models import InterfaceJobModel
+from interface.models import InterfaceJobModel, InterfaceCacheModel, InterfaceModel
 from testplan.models import ApiTestPlanModel, CaseTestPlanModel, CaseTestPlanTaskModel, ApiTestPlanTaskModel, \
     CaseJobModel
 from utils.job_status_enum import CaseTestPlanTaskState, ApiTestPlanTaskState
@@ -96,6 +96,7 @@ class CaseJobSerializer(serializers.ModelSerializer):
 
 class InterfaceTaskSerializer(serializers.ModelSerializer):
     create_date = serializers.SerializerMethodField()
+
     class Meta:
         model = ApiTestPlanTaskModel
         fields = "__all__"
@@ -106,7 +107,15 @@ class InterfaceTaskSerializer(serializers.ModelSerializer):
 
 
 class InterfaceJobSerializer(serializers.ModelSerializer):
+    api_info = serializers.SerializerMethodField()
+
     class Meta:
         model = InterfaceJobModel
         fields = "__all__"
         depth = 1
+
+    def get_api_info(self, obj):
+        if obj.interfaceType == "CACHE":
+            return InterfaceCacheModel.objects.filter(id=obj.interface_id).values()[0]
+        elif obj.interfaceType == "INSTANCE":
+            return InterfaceModel.objects.filter(id=obj.interface_id).values()[0]
