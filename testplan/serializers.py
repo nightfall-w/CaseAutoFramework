@@ -3,6 +3,7 @@ import uuid
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
+from interface.models import InterfaceJobModel
 from testplan.models import ApiTestPlanModel, CaseTestPlanModel, CaseTestPlanTaskModel, ApiTestPlanTaskModel, \
     CaseJobModel
 from utils.job_status_enum import CaseTestPlanTaskState, ApiTestPlanTaskState
@@ -94,7 +95,18 @@ class CaseJobSerializer(serializers.ModelSerializer):
 
 
 class InterfaceTaskSerializer(serializers.ModelSerializer):
+    create_date = serializers.SerializerMethodField()
     class Meta:
         model = ApiTestPlanTaskModel
+        fields = "__all__"
+        depth = 1
+
+    def get_create_date(self, obj):
+        return obj.create_date.strftime("%Y-%m-%d %H:%M:%S")
+
+
+class InterfaceJobSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InterfaceJobModel
         fields = "__all__"
         depth = 1

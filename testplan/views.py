@@ -14,13 +14,13 @@ from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from automation.settings import logger
 from celery_tasks.tasks import api_testplan_executor, case_test_task_executor, case_test_job_executor
-from interface.models import InterfaceModel
+from interface.models import InterfaceModel, InterfaceJobModel
 from testplan.models import ApiTestPlanModel, ApiTestPlanTaskModel, CaseTestPlanModel, CaseTestPlanTaskModel, \
     CaseJobModel
 from utils.job_status_enum import ApiTestPlanTaskState, CaseTestPlanTaskState
 from .runner import CaseRunner
 from .serializers import ApiTestPlanSerializer, CaseTestPlanSerializer, CaseTaskSerializer, InterfaceTaskSerializer, \
-    CaseJobSerializer
+    CaseJobSerializer, InterfaceJobSerializer
 
 
 class ApiTestPlanViewSet(viewsets.ModelViewSet):
@@ -77,10 +77,25 @@ class ApiTask(APIView):
         if not interface_test_plan_uid:
             return Response({"error": "缺少必要参数caseTestPlanUid"}, status=status.HTTP_400_BAD_REQUEST)
         pg = LimitOffsetPagination()
-        case_tasks = ApiTestPlanTaskModel.objects.filter(test_plan_uid=interface_test_plan_uid)
-        page_api_tasks = pg.paginate_queryset(queryset=case_tasks, request=request, view=self)
+        api_tasks = ApiTestPlanTaskModel.objects.filter(test_plan_uid=interface_test_plan_uid)
+        page_api_tasks = pg.paginate_queryset(queryset=api_tasks, request=request, view=self)
         case_tasks_serializer = InterfaceTaskSerializer(page_api_tasks, many=True)
-        return Response(case_tasks_serializer.data)
+        return pg.get_paginated_response(case_tasks_serializer.data)
+
+
+class ApiJobViewSet(viewsets.ModelViewSet):
+    Schema = AutoSchema(manual_fields=[
+        coreapi.Field(name="task_id", required=False, location="query",
+                      schema=coreschema.Integer(description='api task id'), ),
+    ])
+    schema = Schema
+    authentication_classes = (JSONWebTokenAuthentication,)
+    pagination_class = pagination.LimitOffsetPagination
+    serializer_class = InterfaceJobSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        return InterfaceJobModel.objects.filter(api_test_plan_task_id=self.request.GET.get('task_id'))
 
 
 @method_decorator(csrf_exempt, name='post')
