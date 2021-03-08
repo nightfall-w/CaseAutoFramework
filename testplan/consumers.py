@@ -60,4 +60,4 @@ class ResultConsumer(AsyncWebsocketConsumer):
                 logger.error(str(es))
                 msg = {"success": False, "error": str(es)}
             await self.send(json.dumps(msg, cls=DateEncoder))
-            await asyncio.sleep(5)
+            await asyncio.sleep(2)

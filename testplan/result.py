@@ -33,18 +33,21 @@ class CaseStatusManager(StatusManager):
 
 
 class ApiStatusManager(StatusManager):
-    def get_task_result(self, api_test_plan_uid):
-        return ApiTestPlanTaskModel.objects.filter(test_plan_uid=api_test_plan_uid).order_by('-id').values(
-            'test_plan_uid', 'state',
-            'success_num', 'failed_num')
+    @database_sync_to_async
+    def get_task_result(self, request_data):
+        return ApiTestPlanTaskModel.objects.filter(test_plan_uid=request_data.get('api_test_plan_uid')).order_by(
+            '-id').values(
+            'test_plan_uid', 'state', 'id', 'api_job_number', 'create_date', 'used_time',
+                                                                             'success_num', 'failed_num')[
+               request_data.get('offset'):request_data.get('limit')]
 
+    @database_sync_to_async
     def get_job_result(self, api_task_id):
         return InterfaceJobModel.objects.filter(api_test_plan_task_id=api_task_id).values('interface_id',
                                                                                           'test_plan_id',
                                                                                           'api_test_plan_task_id',
                                                                                           'state',
                                                                                           'result')
-
 
 # def adapter(receive_data):
 #     print(receive_data)
