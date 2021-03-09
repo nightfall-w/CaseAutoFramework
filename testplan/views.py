@@ -75,7 +75,7 @@ class ApiTask(APIView):
         if not interface_test_plan_uid:
             return Response({"error": "缺少必要参数caseTestPlanUid"}, status=status.HTTP_400_BAD_REQUEST)
         pg = LimitOffsetPagination()
-        api_tasks = ApiTestPlanTaskModel.objects.filter(test_plan_uid=interface_test_plan_uid)
+        api_tasks = ApiTestPlanTaskModel.objects.filter(test_plan_uid=interface_test_plan_uid).order_by('id')
         page_api_tasks = pg.paginate_queryset(queryset=api_tasks, request=request, view=self)
         case_tasks_serializer = InterfaceTaskSerializer(page_api_tasks, many=True)
         return pg.get_paginated_response(case_tasks_serializer.data)
