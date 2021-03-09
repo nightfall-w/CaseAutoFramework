@@ -352,7 +352,7 @@ class ApiRunner:
                     extracts_result[extract['variable_name']] = delimiter_result
         return extracts_result
 
-    def processing_plant(self, interface_job):
+    def handler(self, interface_job):
         """
         测试计划处理
         """
@@ -381,22 +381,28 @@ class ApiRunner:
                 interface.asserts = json.loads(json.dumps(interface.asserts).replace('$%s' % key, str(value), 10))
         interface.save()
 
+        # 将case job状态更新为RUNNING
+        InterfaceJobModel.objects.filter(id=interface_job.id).update(state=ApiJobState.RUNNING)
         headers = interface.headers  # 请求头
         # 根据请求方式动态选择requests的请求方法
-        requests_fun = getattr(self.session, interface.get_request_mode_display().lower())
-        if interface.formData:  # form-data文件请求
-            data = interface.formData
-            response = requests_fun(url=interface.addr, headers=headers, data=data)
-        elif interface.urlencoded:  # form 表单
-            data = interface.urlencoded
-            response = requests_fun(url=interface.addr, headers=headers, params=data)
-        elif interface.raw:  # json请求
-            data = json.dumps(interface.raw).encode("utf-8")
-            response = requests_fun(url=interface.addr, headers=headers, data=data)
-        else:
-            response = requests_fun(url=interface.addr, headers=headers)
-        extracts_result = self.dispose_response(interface=interface, response=response)
-        InterfaceJobModel.objects.filter(id=interface_job.id).update(extracts=extracts_result)
+        try:
+            requests_fun = getattr(self.session, interface.get_request_mode_display().lower())
+            if interface.formData:  # form-data文件请求
+                data = interface.formData
+                response = requests_fun(url=interface.addr, headers=headers, data=data)
+            elif interface.urlencoded:  # form 表单
+                data = interface.urlencoded
+                response = requests_fun(url=interface.addr, headers=headers, params=data)
+            elif interface.raw:  # json请求
+                data = json.dumps(interface.raw).encode("utf-8")
+                response = requests_fun(url=interface.addr, headers=headers, data=data)
+            else:
+                response = requests_fun(url=interface.addr, headers=headers)
+            extracts_result = self.dispose_response(interface=interface, response=response)
+            InterfaceJobModel.objects.filter(id=interface_job.id).update(extracts=extracts_result)
+        except Exception as es:
+            logger.error("interface job:{} Except: {}".format(interface_job.id, str(es)))
+            InterfaceJobModel.objects.filter(id=interface_job.id).update(state=ApiJobState.FAILED)
 
     def distributor(self):
         # 分配器
@@ -410,7 +416,7 @@ class ApiRunner:
         test_plan_task.state = ApiTestPlanTaskState.RUNNING
         test_plan_task.save()
         for interfaceJob in interfaceJobs:
-            self.processing_plant(interfaceJob)
+            self.handler(interfaceJob)
             # upInterfaces = InterfaceJobModel.objects.get(id=interfaceJob.id)
             interfaceJob.refresh_from_db()  # 载入字段更新过后的对象或查询集 避免拿到缓存在内存的老数据
             test_plan_task.refresh_from_db()
@@ -458,21 +464,24 @@ class CaseRunner:
         case_job.state = CaseJobState.RUNNING
         case_job.save()
         report_name = case_job.case_path.split('/')[-1].split('.')[0] + '.html'
+        result_log_name = case_job.case_path.split('/')[-1].split('.')[0] + '.log'
+        xml_name = case_job.case_path.split('/')[-1].split('.')[0] + '.xml'
         report_path = os.path.join(MEDIA_ROOT, 'html-report', str(project_id), test_plan_uid, str(task_id))
         if not os.path.exists(report_path):
             os.makedirs(report_path)
         try:
             p = subprocess.Popen(
-                'pytest {} -vv -s --html={} --self-contained-html'.format(
+                'pytest {} -vv -s --html={} --self-contained-html --result-log={} --junit-xml={}'.format(
                     os.path.join(settings.BASE_DIR, 'case_house', case_job.case_path),
-                    os.path.join(report_path, report_name)),
+                    os.path.join(report_path, report_name), os.path.join(report_path, result_log_name),
+                    os.path.join(report_path, xml_name)),
                 shell=True, stdout=subprocess.PIPE)
             out = p.stdout
             read_data = out.read().decode("utf-8", "ignore")
-            case_job.log = read_data
+            # case_job.log = read_data
             case_job.report_path = '/media/html-report/{}/{}/{}/{}'.format(project_id, test_plan_uid, task_id,
                                                                            report_name)
-            case_result = case_job.log.split('\n')[-2]
+            case_result = read_data.split('\n')[-2]
             case_job.result = case_result.replace('=', '').strip(' ')
             case_job.state = CaseJobState.FINISH
             case_job.save()
