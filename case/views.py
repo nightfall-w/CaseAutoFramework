@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 
 import coreapi
 import coreschema
@@ -299,6 +300,42 @@ class CaseTree(APIView):
                 os.path.join(settings.BASE_DIR, 'case_house', gitlab_path, branch_name, project_name))
             refine_tree = path_tree_instance.empty_json_data(tree)
             return JsonResponse({"branch": branch_name, "case_tree": [refine_tree]})
+
+
+class CaseCollectList(APIView):
+    """
+    case管理器
+    """
+    Schema = AutoSchema(manual_fields=[
+        coreapi.Field(name="path", required=False, location="query", schema=coreschema.String(description='case路径')),
+    ])
+    schema = Schema
+    authentication_classes = (JSONWebTokenAuthentication,)
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        """
+        【获取指定case中的条目信息】
+        :return
+        """
+        case_path = request.query_params.dict().get('path')
+        if case_path:
+            # 有指定文件 表示要获取case详情
+            try:
+                absolute_path = os.path.join(settings.BASE_DIR, 'case_house', case_path)
+                p = subprocess.Popen(
+                    "pytest {} --collect-only -q | head -n -2".format(absolute_path),
+                    shell=True, stdout=subprocess.PIPE)
+                out = p.stdout
+                read_data = out.read().decode("utf-8", "ignore")
+                subCasesList = read_data.split('\n')[:-1]
+                return JsonResponse({"success": True, "subCaseList": subCasesList})
+            except FileNotFoundError as es:
+                logger.error(str(es))
+                return JsonResponse({"success": False, "error": "case:{} not find".format(case_path)})
+        else:
+            return Response(data={"success": False, "error": "Lack of necessary parameters:case_path}"},
+                            status=status.HTTP_404_NOT_FOUND)
 
 # class CaseViewSet(viewsets.ModelViewSet):
 #     authentication_classes = (JSONWebTokenAuthentication,)
