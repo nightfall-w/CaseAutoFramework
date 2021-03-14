@@ -467,8 +467,11 @@ class CaseRunner:
         result_log_name = case_job.case_path.split('/')[-1].split('.')[0] + '.log'
         xml_name = case_job.case_path.split('/')[-1].split('.')[0] + '.xml'
         report_path = os.path.join(MEDIA_ROOT, 'html-report', str(project_id), test_plan_uid, str(task_id))
-        if not os.path.exists(report_path):
-            os.makedirs(report_path)
+        try:
+            if not os.path.exists(report_path):
+                os.makedirs(report_path)
+        except FileExistsError:
+            pass
         try:
             p = subprocess.Popen(
                 'pytest {} -vv -s --html={} --self-contained-html --result-log={} --junit-xml={}'.format(

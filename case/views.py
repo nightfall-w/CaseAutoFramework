@@ -323,25 +323,30 @@ class CaseCollectList(APIView):
         if case_path:
             # 有指定文件 表示要获取case详情
             try:
-                absolute_path = os.path.join(settings.BASE_DIR, 'case_house', case_path)
-                p_dir, p_file = os.path.split(absolute_path)
-                if platform.system().lower() == "linux":
-                    # Linux系统
-                    p = subprocess.Popen(
-                        "pytest {} --collect-only -q | head -n -2".format(p_file), cwd=p_dir,
-                        shell=True, stdout=subprocess.PIPE)
-                elif platform.system().lower() == "darwin":
-                    # Mac系统
-                    p = subprocess.Popen(
-                        "pytest {} --collect-only -q | ghead -n -2".format(p_file), cwd=p_dir,
-                        shell=True, stdout=subprocess.PIPE)
-                out = p.stdout
-                read_data = out.read().decode("utf-8", "ignore")
-                if "ERROR" in read_data:
-                    subCasesList = []
+                relative_path_dir, script_name = os.path.split(case_path)
+                if "test" in script_name.lower() and os.path.splitext(case_path)[1] == ".py":
+                    absolute_path = os.path.join(settings.BASE_DIR, 'case_house', case_path)
+                    p_dir, p_file = os.path.split(absolute_path)
+                    if platform.system().lower() == "linux":
+                        # Linux系统
+                        p = subprocess.Popen(
+                            "pytest {} --collect-only -q | head -n -2".format(p_file), cwd=p_dir,
+                            shell=True, stdout=subprocess.PIPE)
+                    elif platform.system().lower() == "darwin":
+                        # Mac系统
+                        p = subprocess.Popen(
+                            "pytest {} --collect-only -q | ghead -n -2".format(p_file), cwd=p_dir,
+                            shell=True, stdout=subprocess.PIPE)
+                    out = p.stdout
+                    read_data = out.read().decode("utf-8", "ignore")
+                    if "ERROR" in read_data:
+                        subCasesList = []
+                    else:
+                        subCasesList = [{"label": case, "filepath": os.path.join(relative_path_dir, case)} for case in
+                                        read_data.split('\n')[:-1]]
+                    return JsonResponse({"success": True, "subCaseList": subCasesList})
                 else:
-                    subCasesList = read_data.split('\n')[:-1]
-                return JsonResponse({"success": True, "subCaseList": subCasesList})
+                    return JsonResponse({"success": True, "subCaseList": []})
             except FileNotFoundError as es:
                 logger.error(str(es))
                 return JsonResponse({"success": False, "error": "case:{} not find".format(case_path)})
