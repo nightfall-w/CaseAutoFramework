@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'dwebsocket',
     'channels',
-    # 'celery_tasks',
     'django_celery_beat',
     'corsheaders',
     'django_jsonfield_backport',

@@ -12,4 +12,4 @@ app = Celery('automation')
 app.config_from_object('celery_tasks.celeryconfig', namespace='CELERY')
 app.now = timezone.now
 
-app.autodiscover_tasks()
+app.autodiscover_tasks(["celery_tasks"])

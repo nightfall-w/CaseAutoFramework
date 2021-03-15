@@ -16,6 +16,10 @@ task_default_exchange = 'default'
 CELERY_IMPORTS = (
     "celery_tasks.tasks"
 )
+
+# celery beat配置
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
 task_queues = (
     Queue(
         "default",
