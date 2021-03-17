@@ -123,6 +123,30 @@ def case_test_task_executor(case_task_id):
     return True
 
 
+@celery_app.task(name="case_test_task_timing_executor")
+def case_test_task_timing_executor(project_id, case_testplan_uid):
+    case_test_plan = CaseTestPlanModel.objects.filter(project_id=project_id, plan_id=case_testplan_uid).first()
+    if not case_test_plan:
+        logger.error("case testplan uid: {} not found")
+        return False
+    case_paths = case_test_plan.case_paths
+    case_test_plan_task = CaseTestPlanTaskModel.objects.create(test_plan_uid=case_testplan_uid,
+                                                               state=CaseTestPlanTaskState.WAITING,
+                                                               case_job_number=len(case_paths),
+                                                               finish_num=0)
+    CaseRunner.distributor(case_test_plan_task)
+
+    # 根据是否并行执行case选择不用的触发器
+    if case_test_plan.parallel:
+        '''并行执行'''
+        case_jobs_id = CaseJobModel.objects.filter(case_task_id=case_test_plan_task.id).values_list('id', flat=True)
+        for case_job_id in case_jobs_id:
+            case_test_job_executor(case_job_id, project_id, case_test_plan.plan_id, case_test_plan_task.id)
+    else:
+        '''串行执行'''
+        case_test_task_executor(case_test_plan_task.id)
+
+
 @celery_app.task(name="case_test_job_executor")
 def case_test_job_executor(case_job_id, project_id, test_plan_uid, task_id):
     """

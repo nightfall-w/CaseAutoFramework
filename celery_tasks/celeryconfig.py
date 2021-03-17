@@ -35,6 +35,10 @@ task_queues = (
         Exchange("case_test_task_executor"),
         routing_key="case_test_task_executor"),
     Queue(
+        "case_test_task_timing_executor",
+        Exchange("case_test_task_timing_executor"),
+        routing_key="case_test_task_timing_executor"),
+    Queue(
         "branch_pull",
         Exchange("branch_pull"),
         routing_key="branch_pull"),
@@ -49,4 +53,6 @@ task_routes = {
                                "routing_key": "case_test_job_executor"},
     'case_test_task_executor': {"queue": "case_test_task_executor",
                                 "routing_key": "case_test_task_executor"},
+    'case_test_task_timing_executor': {"queue": "case_test_task_timing_executor",
+                                "routing_key": "case_test_task_timing_executor"},
 }

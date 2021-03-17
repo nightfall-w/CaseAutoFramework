@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'dwebsocket',
     'channels',
     'django_celery_beat',
+    'django_celery_results',
     'corsheaders',
     'django_jsonfield_backport',
     'case',
