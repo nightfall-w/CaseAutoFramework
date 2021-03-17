@@ -1,5 +1,5 @@
 from kombu import Queue, Exchange
-from automation.settings import REDIS_SERVER
+from automation.settings import REDIS_SERVER, TIME_ZONE
 
 # CELERY STUFF
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers.DatabaseScheduler'
@@ -16,9 +16,6 @@ task_default_exchange = 'default'
 CELERY_IMPORTS = (
     "celery_tasks.tasks"
 )
-
-# celery beat配置
-CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 task_queues = (
     Queue(

@@ -7,7 +7,7 @@ from django.utils import timezone
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'automation.settings')
 
-app = Celery('automation')
+app = Celery('celery_tasks')
 
 app.config_from_object('celery_tasks.celeryconfig', namespace='CELERY')
 app.now = timezone.now

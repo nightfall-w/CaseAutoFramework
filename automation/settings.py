@@ -156,6 +156,11 @@ SESSION_REDIS_DB = 4  # 选择存储槽
 SESSION_REDIS_PASSWORD = ''
 SESSION_REDIS_PREFIX = 'session'
 
+# Django celery beat
+CELERY_TIMEZONE = TIME_ZONE
+DJANGO_CELERY_BEAT_TZ_AWARE = False
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
 # 存静态文件
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
