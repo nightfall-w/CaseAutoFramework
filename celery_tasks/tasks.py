@@ -125,6 +125,12 @@ def case_test_task_executor(case_task_id):
 
 @celery_app.task(name="case_test_task_timing_executor")
 def case_test_task_timing_executor(project_id, case_testplan_uid):
+    """
+    定时任务 执行case task
+    :param project_id: 项目的project ID
+    :param case_testplan_uid: case testplan的 UUID
+    :return:
+    """
     case_test_plan = CaseTestPlanModel.objects.filter(project_id=project_id, plan_id=case_testplan_uid).first()
     if not case_test_plan:
         logger.error("case testplan uid: {} not found")
@@ -141,7 +147,7 @@ def case_test_task_timing_executor(project_id, case_testplan_uid):
         '''并行执行'''
         case_jobs_id = CaseJobModel.objects.filter(case_task_id=case_test_plan_task.id).values_list('id', flat=True)
         for case_job_id in case_jobs_id:
-            case_test_job_executor(case_job_id, project_id, case_test_plan.plan_id, case_test_plan_task.id)
+            case_test_job_executor.delay(case_job_id, project_id, case_test_plan.plan_id, case_test_plan_task.id)
     else:
         '''串行执行'''
         case_test_task_executor(case_test_plan_task.id)

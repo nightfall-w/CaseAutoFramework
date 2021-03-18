@@ -6,7 +6,7 @@ import os
 """
 
 
-class ConfigParser():
+class ConfigParser:
     config_dic = {}
 
     @classmethod
