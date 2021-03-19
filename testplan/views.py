@@ -2,6 +2,7 @@ import json
 
 import coreapi
 import coreschema
+import pytz
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, pagination, permissions, status
@@ -13,12 +14,14 @@ from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from celery_tasks.tasks import api_testplan_executor, case_test_task_executor, case_test_job_executor
 from interface.models import InterfaceJobModel
+from project.models import ProjectModel
 from testplan.models import ApiTestPlanModel, ApiTestPlanTaskModel, CaseTestPlanModel, CaseTestPlanTaskModel, \
     CaseJobModel
 from utils.job_status_enum import ApiTestPlanTaskState, CaseTestPlanTaskState
 from .runner import CaseRunner
 from .serializers import ApiTestPlanSerializer, CaseTestPlanSerializer, CaseTaskSerializer, InterfaceTaskSerializer, \
     CaseJobSerializer, InterfaceJobSerializer
+from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
 
 class ApiTestPlanViewSet(viewsets.ModelViewSet):
@@ -226,7 +229,7 @@ class TriggerCasePlan(APIView):
             return Response({"error": "缺少必要的参数"}, status=status.HTTP_400_BAD_REQUEST)
         case_test_plan = CaseTestPlanModel.objects.filter(project_id=project_id, plan_id=testplan_id).first()
         if not case_test_plan:
-            return Response({"error": "testplan {} not find".format(testplan_id)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "testplan {} not found".format(testplan_id)}, status=status.HTTP_404_NOT_FOUND)
         case_paths = case_test_plan.case_paths
         case_test_plan_task = CaseTestPlanTaskModel.objects.create(test_plan_uid=testplan_id,
                                                                    state=CaseTestPlanTaskState.WAITING,
@@ -244,3 +247,61 @@ class TriggerCasePlan(APIView):
             '''串行执行'''
             case_test_task_executor.delay(case_test_plan_task.id)
         return Response({"success": True, "data": "测试用例计划已经成功触发"})
+
+
+@method_decorator(csrf_exempt, name='post')
+class TimingCasePlan(APIView):
+    """
+    【触发case测试计划】
+    """
+    Schema = AutoSchema(manual_fields=[
+        coreapi.Field(name="projectId", required=True, location="form",
+                      schema=coreschema.Integer(description='项目id')),
+        coreapi.Field(name="testPlanId", required=True, location="form",
+                      schema=coreschema.String(description='接口测试计划uid')),
+        coreapi.Field(name="crontab", required=True, location="form",
+                      schema=coreschema.String(description='定时任务编排参数')),
+    ])
+    schema = Schema
+    authentication_classes = (JSONWebTokenAuthentication,)
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request):
+        receive_data = request.data
+        testplan_id = receive_data.get('testPlanId', None)
+        project_id = receive_data.get('projectId', None)
+        crontab_kwargs = receive_data.get('crontab_kwargs', None)
+        if not all([testplan_id, project_id, crontab_kwargs]):
+            return Response({"error": "缺少必要的参数"}, status=status.HTTP_400_BAD_REQUEST)
+        project = ProjectModel.objects.filter(id=project_id).first()
+        if not project:
+            return Response({"error": "project {} not found".format(project_id)}, status=status.HTTP_404_NOT_FOUND)
+        case_test_plan = CaseTestPlanModel.objects.filter(project_id=project_id, plan_id=testplan_id).first()
+        if not case_test_plan:
+            return Response({"error": "testplan {} not found".format(testplan_id)}, status=status.HTTP_404_NOT_FOUND)
+
+        schedule, _ = CrontabSchedule.objects.get_or_create(
+            minute='*',
+            hour='*',
+            day_of_week='*',
+            day_of_month='*',
+            month_of_year='*',
+            timezone=pytz.timezone(
+                'Asia/Shanghai'))
+        # case_paths = case_test_plan.case_paths
+        # case_test_plan_task = CaseTestPlanTaskModel.objects.create(test_plan_uid=testplan_id,
+        #                                                            state=CaseTestPlanTaskState.WAITING,
+        #                                                            case_job_number=len(case_paths),
+        #                                                            finish_num=0)
+        # CaseRunner.distributor(case_test_plan_task)
+        #
+        # # 根据是否并行执行case选择不用的触发器
+        # if case_test_plan.parallel:
+        #     '''并行执行'''
+        #     case_jobs_id = CaseJobModel.objects.filter(case_task_id=case_test_plan_task.id).values_list('id', flat=True)
+        #     for case_job_id in case_jobs_id:
+        #         case_test_job_executor.delay(case_job_id, project_id, case_test_plan.plan_id, case_test_plan_task.id)
+        # else:
+        #     '''串行执行'''
+        #     case_test_task_executor.delay(case_test_plan_task.id)
+        # return Response({"success": True, "data": "测试用例计划已经成功触发"})
