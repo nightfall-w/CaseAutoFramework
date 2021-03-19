@@ -1,8 +1,10 @@
 import json
+from datetime import datetime
 
 import coreapi
 import coreschema
 import pytz
+from django.db import transaction
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, pagination, permissions, status
@@ -280,14 +282,16 @@ class TimingCasePlan(APIView):
         if not case_test_plan:
             return Response({"error": "testplan {} not found".format(testplan_id)}, status=status.HTTP_404_NOT_FOUND)
 
-        schedule, _ = CrontabSchedule.objects.get_or_create(
-            minute='*',
-            hour='*',
-            day_of_week='*',
-            day_of_month='*',
-            month_of_year='*',
-            timezone=pytz.timezone(
-                'Asia/Shanghai'))
+        with transaction.atomic():
+            schedule, _ = CrontabSchedule.objects.get_or_create(
+                minute='*',
+                hour='*',
+                day_of_week='*',
+                day_of_month='*',
+                month_of_year='*',
+                timezone=pytz.timezone(
+                    'Asia/Shanghai'))
+            dt = datetime.now().strftime('%Y%m%d%H%M%S')
         # case_paths = case_test_plan.case_paths
         # case_test_plan_task = CaseTestPlanTaskModel.objects.create(test_plan_uid=testplan_id,
         #                                                            state=CaseTestPlanTaskState.WAITING,
