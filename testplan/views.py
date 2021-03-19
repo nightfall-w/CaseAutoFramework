@@ -1,10 +1,14 @@
 import json
+from datetime import datetime
 
 import coreapi
 import coreschema
 import pytz
+from django.conf.global_settings import TIME_ZONE
+from django.db import transaction
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
+from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from rest_framework import viewsets, pagination, permissions, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
@@ -12,6 +16,7 @@ from rest_framework.schemas import AutoSchema
 from rest_framework.views import APIView
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
+from automation.settings import logger
 from celery_tasks.tasks import api_testplan_executor, case_test_task_executor, case_test_job_executor
 from interface.models import InterfaceJobModel
 from project.models import ProjectModel
@@ -21,7 +26,6 @@ from utils.job_status_enum import ApiTestPlanTaskState, CaseTestPlanTaskState
 from .runner import CaseRunner
 from .serializers import ApiTestPlanSerializer, CaseTestPlanSerializer, CaseTaskSerializer, InterfaceTaskSerializer, \
     CaseJobSerializer, InterfaceJobSerializer
-from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
 
 class ApiTestPlanViewSet(viewsets.ModelViewSet):
@@ -268,40 +272,38 @@ class TimingCasePlan(APIView):
 
     def post(self, request):
         receive_data = request.data
-        testplan_id = receive_data.get('testPlanId', None)
+        testplan_uid = receive_data.get('testPlanId', None)
         project_id = receive_data.get('projectId', None)
         crontab_kwargs = receive_data.get('crontab_kwargs', None)
-        if not all([testplan_id, project_id, crontab_kwargs]):
+        if not all([testplan_uid, project_id, crontab_kwargs]):
             return Response({"error": "缺少必要的参数"}, status=status.HTTP_400_BAD_REQUEST)
         project = ProjectModel.objects.filter(id=project_id).first()
         if not project:
             return Response({"error": "project {} not found".format(project_id)}, status=status.HTTP_404_NOT_FOUND)
-        case_test_plan = CaseTestPlanModel.objects.filter(project_id=project_id, plan_id=testplan_id).first()
+        case_test_plan = CaseTestPlanModel.objects.filter(project_id=project_id, plan_id=testplan_uid).first()
         if not case_test_plan:
-            return Response({"error": "testplan {} not found".format(testplan_id)}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "testplan {} not found".format(testplan_uid)}, status=status.HTTP_404_NOT_FOUND)
 
-        schedule, _ = CrontabSchedule.objects.get_or_create(
-            minute='*',
-            hour='*',
-            day_of_week='*',
-            day_of_month='*',
-            month_of_year='*',
-            timezone=pytz.timezone(
-                'Asia/Shanghai'))
-        # case_paths = case_test_plan.case_paths
-        # case_test_plan_task = CaseTestPlanTaskModel.objects.create(test_plan_uid=testplan_id,
-        #                                                            state=CaseTestPlanTaskState.WAITING,
-        #                                                            case_job_number=len(case_paths),
-        #                                                            finish_num=0)
-        # CaseRunner.distributor(case_test_plan_task)
-        #
-        # # 根据是否并行执行case选择不用的触发器
-        # if case_test_plan.parallel:
-        #     '''并行执行'''
-        #     case_jobs_id = CaseJobModel.objects.filter(case_task_id=case_test_plan_task.id).values_list('id', flat=True)
-        #     for case_job_id in case_jobs_id:
-        #         case_test_job_executor.delay(case_job_id, project_id, case_test_plan.plan_id, case_test_plan_task.id)
-        # else:
-        #     '''串行执行'''
-        #     case_test_task_executor.delay(case_test_plan_task.id)
-        # return Response({"success": True, "data": "测试用例计划已经成功触发"})
+        with transaction.atomic():
+            save_id = transaction.savepoint()
+            try:
+                schedule, _ = CrontabSchedule.objects.get_or_create(
+                    minute=crontab_kwargs.get('minute', '*'),
+                    hour=crontab_kwargs.get('hour', '*'),
+                    day_of_week=crontab_kwargs.get('day_of_week', '*'),
+                    day_of_month=crontab_kwargs.get('day_of_month', '*'),
+                    month_of_year=crontab_kwargs.get('month_of_year', '*'),
+                    timezone=pytz.timezone(TIME_ZONE))
+                dt = datetime.now().strftime('%Y%m%d%H%M%S')
+                _periodic_task = PeriodicTask.objects.create(
+                    name=dt + '-' + 'case测试计划定时任务' + '-' + testplan_uid,
+                    task='case_test_task_timing_executor',
+                    args=[37],
+                    enabled=True,
+                    crontab=schedule
+                )
+                return Response({"success": True, "msg": "create success!"})
+            except Exception as e:
+                transaction.savepoint_rollback(save_id)
+                logger.error('添加计划任务{}失败，错误原因：{}'.format(testplan_uid, e))
+                return Response({"success": False, "error": str(e)})
