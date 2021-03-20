@@ -71,7 +71,8 @@ class CaseTestPlanSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data["create_user"] = self.context["request"].user
-        validated_data["plan_id"] = uuid.uuid4()
+        testplan_uid = uuid.uuid4()
+        validated_data["plan_id"] = testplan_uid
         return CaseTestPlanModel.objects.create(**validated_data)
 
 
