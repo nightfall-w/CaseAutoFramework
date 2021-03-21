@@ -174,7 +174,7 @@ class CaseTestPlanViewSet(viewsets.ModelViewSet):
                 crontab = crontab[1:-1]
             elif len(crontab) == 6:
                 # 包含秒 不包含年
-                crontab = crontab[:-1]
+                crontab = crontab[1:]
             crontab_kwargs = {
                 'minute': crontab[0],
                 'hour': crontab[1],
@@ -196,7 +196,8 @@ class CaseTestPlanViewSet(viewsets.ModelViewSet):
                     _periodic_task = PeriodicTask.objects.create(
                         name=dt + '-' + 'case测试计划定时任务' + '-' + serializer.data.get('plan_id'),
                         task='case_test_task_timing_executor',
-                        args=[serializer.data.get('project_id'), serializer.data.get('plan_id')],
+                        args=["{}".format(serializer.data.get('project_id')),
+                              "{}".format(serializer.data.get('plan_id'))],
                         enabled=True,
                         crontab=schedule
                     )
@@ -227,7 +228,7 @@ class CaseTestPlanViewSet(viewsets.ModelViewSet):
                 crontab = crontab[1:-1]
             elif len(crontab) == 6:
                 # 包含秒 不包含年
-                crontab = crontab[:-1]
+                crontab = crontab[1:]
             crontab_kwargs = {
                 'minute': crontab[0],
                 'hour': crontab[1],
