@@ -48,6 +48,8 @@ class CaseTestPlanModel(models.Model):
     name = models.CharField(verbose_name="计划名称", max_length=30, null=False, help_text="测试计划名")
     description = models.TextField(verbose_name="描述", null=True, blank=True, default='', help_text="描述说明")
     parallel = models.BooleanField(verbose_name="是否并行方式执行", default=False, help_text="是否并行执行")
+    timer_enable = models.BooleanField(verbose_name="是否启用定时器", default=False, help_text="是否启用定时器")
+    crontab = models.CharField(verbose_name="crontab", max_length=300, null=True, blank=True, help_text="crontab")
     plan_id = models.CharField(verbose_name="计划id", max_length=50, null=False, help_text="计划编号")
     case_paths = JSONField(verbose_name="case路径集合", help_text="case路径集合", null=False)
     project_id = models.IntegerField(verbose_name="项目id", null=False, help_text="项目id")

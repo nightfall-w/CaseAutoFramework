@@ -7,8 +7,9 @@ BROKER_URL = 'amqp://admin:admin@127.0.0.1:5672//'
 CELERY_BROKER_URL = 'amqp://admin:admin@127.0.0.1:5672//'
 CELERY_RESULT_BACKEND = 'redis://%s:6379/2' % REDIS_SERVER
 CELERY_ACCEPT_CONTENT = ['application/json']
-timezone = 'Asia/Shanghai'
+timezone = TIME_ZONE
 enable_utc = False
+
 DJANGO_CELERY_BEAT_TZ_AWARE = False
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -16,6 +17,11 @@ task_default_exchange = 'default'
 CELERY_IMPORTS = (
     "celery_tasks.tasks"
 )
+
+# CELERY_ENABLE_UTC = False
+# CELERY_TIMEZONE = TIME_ZONE
+# DJANGO_CELERY_BEAT_TZ_AWARE = False
+# CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 task_queues = (
     Queue(
