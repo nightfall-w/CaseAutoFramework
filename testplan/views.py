@@ -168,7 +168,8 @@ class CaseTestPlanViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         if request.data.get('timer_enable') and request.data.get('crontab'):
-            crontab = request.data.get('crontab').split(' ')
+            crontab = request.data.get('crontab').replace('?', '*')
+            crontab = crontab.split(' ')
             if len(crontab) == 7:
                 # 包含秒 包含年
                 crontab = crontab[1:-1]
@@ -196,8 +197,8 @@ class CaseTestPlanViewSet(viewsets.ModelViewSet):
                     _periodic_task = PeriodicTask.objects.create(
                         name=dt + '-' + 'case测试计划定时任务' + '-' + serializer.data.get('plan_id'),
                         task='case_test_task_timing_executor',
-                        args=["{}".format(serializer.data.get('project_id')),
-                              "{}".format(serializer.data.get('plan_id'))],
+                        args=json.dumps([serializer.data.get('project_id'),
+                                         serializer.data.get('plan_id')]),
                         enabled=True,
                         crontab=schedule
                     )
@@ -222,7 +223,8 @@ class CaseTestPlanViewSet(viewsets.ModelViewSet):
             instance._prefetched_objects_cache = {}
 
         if request.data.get('crontab'):
-            crontab = request.data.get('crontab').split(' ')
+            crontab = request.data.get('crontab').replace('?', '*')
+            crontab = crontab.split(' ')
             if len(crontab) == 7:
                 # 包含秒 包含年
                 crontab = crontab[1:-1]
@@ -249,9 +251,21 @@ class CaseTestPlanViewSet(viewsets.ModelViewSet):
                 name__icontains='case测试计划定时任务' + '-' + serializer.data.get('plan_id'),
             ).update(enabled=False, crontab=schedule)
         else:
-            PeriodicTask.objects.filter(
+            periodic_task = PeriodicTask.objects.filter(
                 name__icontains='case测试计划定时任务' + '-' + serializer.data.get('plan_id'),
-            ).update(enabled=True, crontab=schedule)
+            )
+            if not periodic_task:
+                dt = datetime.now().strftime('%Y%m%d%H%M%S')
+                _periodic_task = PeriodicTask.objects.create(
+                    name=dt + '-' + 'case测试计划定时任务' + '-' + serializer.data.get('plan_id'),
+                    task='case_test_task_timing_executor',
+                    args=json.dumps([serializer.data.get('project_id'),
+                                     serializer.data.get('plan_id')]),
+                    enabled=True,
+                    crontab=schedule
+                )
+            else:
+                periodic_task.update(enabled=True, crontab=schedule)
         return Response(serializer.data)
 
     def destroy(self, request, *args, **kwargs):
@@ -345,59 +359,3 @@ class TriggerCasePlan(APIView):
             '''串行执行'''
             case_test_task_executor.delay(case_test_plan_task.id)
         return Response({"success": True, "data": "测试用例计划已经成功触发"})
-
-
-@method_decorator(csrf_exempt, name='post')
-class TimingCasePlan(APIView):
-    """
-    【触发case测试计划】
-    """
-    Schema = AutoSchema(manual_fields=[
-        coreapi.Field(name="projectId", required=True, location="form",
-                      schema=coreschema.Integer(description='项目id')),
-        coreapi.Field(name="testPlanId", required=True, location="form",
-                      schema=coreschema.String(description='接口测试计划uid')),
-        coreapi.Field(name="crontab", required=True, location="form",
-                      schema=coreschema.String(description='定时任务编排参数')),
-    ])
-    schema = Schema
-    authentication_classes = (JSONWebTokenAuthentication,)
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def post(self, request):
-        receive_data = request.data
-        testplan_uid = receive_data.get('testPlanId', None)
-        project_id = receive_data.get('projectId', None)
-        crontab_kwargs = receive_data.get('crontab', None)
-        if not all([testplan_uid, project_id, crontab_kwargs]):
-            return Response({"error": "缺少必要的参数"}, status=status.HTTP_400_BAD_REQUEST)
-        project = ProjectModel.objects.filter(id=project_id).first()
-        if not project:
-            return Response({"error": "project {} not found".format(project_id)}, status=status.HTTP_404_NOT_FOUND)
-        case_test_plan = CaseTestPlanModel.objects.filter(project_id=project_id, plan_id=testplan_uid).first()
-        if not case_test_plan:
-            return Response({"error": "testplan {} not found".format(testplan_uid)}, status=status.HTTP_404_NOT_FOUND)
-
-        with transaction.atomic():
-            save_id = transaction.savepoint()
-            try:
-                schedule, _ = CrontabSchedule.objects.get_or_create(
-                    minute=crontab_kwargs.get('minute', '*'),
-                    hour=crontab_kwargs.get('hour', '*'),
-                    day_of_week=crontab_kwargs.get('day_of_week', '*'),
-                    day_of_month=crontab_kwargs.get('day_of_month', '*'),
-                    month_of_year=crontab_kwargs.get('month_of_year', '*'),
-                    timezone=pytz.timezone(TIME_ZONE))
-                dt = datetime.now().strftime('%Y%m%d%H%M%S')
-                _periodic_task = PeriodicTask.objects.create(
-                    name=dt + '-' + 'case测试计划定时任务' + '-' + testplan_uid,
-                    task='case_test_task_timing_executor',
-                    args=[project_id, testplan_uid],
-                    enabled=True,
-                    crontab=schedule
-                )
-                return Response({"success": True, "msg": "create success!"})
-            except Exception as e:
-                transaction.savepoint_rollback(save_id)
-                logger.error('添加计划任务{}失败，错误原因：{}'.format(testplan_uid, e))
-                return Response({"success": False, "error": str(e)})

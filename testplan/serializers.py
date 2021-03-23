@@ -73,6 +73,8 @@ class CaseTestPlanSerializer(serializers.ModelSerializer):
         validated_data["create_user"] = self.context["request"].user
         testplan_uid = uuid.uuid4()
         validated_data["plan_id"] = testplan_uid
+        validated_data["crontab"] = validated_data.get("crontab").replace('?', '*') if validated_data.get(
+            "crontab") else validated_data.get("crontab")
         return CaseTestPlanModel.objects.create(**validated_data)
 
 
