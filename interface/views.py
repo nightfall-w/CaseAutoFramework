@@ -34,6 +34,9 @@ class InterfaceViewSet(viewsets.ModelViewSet):
         【获取接口列表】
         """
         interfaces = self.get_queryset()
+        if not all([request.GET.get('limit'), request.GET.get('offset')]):
+            serializer = self.get_serializer(interfaces, many=True)
+            return Response({"count": len(interfaces), "results": serializer.data})
         page = self.paginate_queryset(interfaces)
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)

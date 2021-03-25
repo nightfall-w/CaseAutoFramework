@@ -12,9 +12,10 @@ from django.conf import settings
 
 from automation.settings import MEDIA_ROOT, logger
 from interface.models import InterfaceJobModel, InterfaceModel, InterfaceCacheModel
+from project.models import ProjectModel
 from standard.enum import InterFaceType
 from testplan import operation
-from testplan.models import ApiTestPlanTaskModel, CaseTestPlanModel, CaseJobModel
+from testplan.models import ApiTestPlanTaskModel, CaseTestPlanModel, CaseJobModel, ApiTestPlanModel
 from utils.common import ts_10, ts_13
 from utils.job_status_enum import ApiJobState, ApiTestPlanTaskState, CaseJobState
 
@@ -366,8 +367,18 @@ class ApiRunner:
         else:
             interface = InterfaceCacheModel.objects.get(id=interface_job.interface_id)
         extracts_dict = get_all_extracts(interface_job.test_plan_id, interface_job.api_test_plan_task_id)
+        project_id = ApiTestPlanModel.objects.filter(plan_id=interface_job.test_plan_id).first().project_id
+
+        # 添加全局环境变量到变量池
+        global_env_variable = ProjectModel.objects.get(id=project_id).env_variable
+        if global_env_variable:
+            for k, v in global_env_variable.items():
+                extracts_dict[k] = v
+
+        # 添加变量函数到变量池
         extracts_dict['ts_10'] = ts_10()
         extracts_dict['ts_13'] = ts_13()
+        
         for key, value in extracts_dict.items():
             if '$%s' % key in interface.addr:
                 interface.addr = interface.addr.replace('$%s' % key, str(value), 10)
