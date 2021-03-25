@@ -81,7 +81,7 @@ class ApiTask(APIView):
         if not interface_test_plan_uid:
             return Response({"error": "缺少必要参数caseTestPlanUid"}, status=status.HTTP_400_BAD_REQUEST)
         pg = LimitOffsetPagination()
-        api_tasks = ApiTestPlanTaskModel.objects.filter(test_plan_uid=interface_test_plan_uid).order_by('id')
+        api_tasks = ApiTestPlanTaskModel.objects.filter(test_plan_uid=interface_test_plan_uid).order_by('-id')
         page_api_tasks = pg.paginate_queryset(queryset=api_tasks, request=request, view=self)
         case_tasks_serializer = InterfaceTaskSerializer(page_api_tasks, many=True)
         return pg.get_paginated_response(case_tasks_serializer.data)
@@ -132,7 +132,7 @@ class TriggerApiPlan(APIView):
                                                                  state=ApiTestPlanTaskState.WAITING, api_job_number=0,
                                                                  success_num=0, failed_num=0)
         # 使用celery task 处理testplan runner
-        api_testplan_executor(testplan_id, interfaceIds, api_test_plan_task.id)
+        api_testplan_executor.delay(testplan_id, interfaceIds, api_test_plan_task.id)
         return Response({"success": True})
 
 

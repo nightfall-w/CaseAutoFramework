@@ -15,6 +15,7 @@ from interface.models import InterfaceJobModel, InterfaceModel, InterfaceCacheMo
 from standard.enum import InterFaceType
 from testplan import operation
 from testplan.models import ApiTestPlanTaskModel, CaseTestPlanModel, CaseJobModel
+from utils.common import ts_10, ts_13
 from utils.job_status_enum import ApiJobState, ApiTestPlanTaskState, CaseJobState
 
 
@@ -232,6 +233,7 @@ def assert_delimiter(key_str, response):
                 result = result.get(tier, dict())
         return result
     except Exception as es:
+        logger.error(str(es))
         return "EXCEPTION"
 
 
@@ -285,6 +287,7 @@ class ApiRunner:
                 else:
                     pattern = isRegular(_assert['expressions'])
                     re_result = assert_regular(pattern, response.text)
+                    logger.info("正则匹配结果:{}".format(re_result))
                     if not re_result:  # 断言失败
                         update_api_job_fail(self.test_plan_id, interface.id, response)  # 跟新interfaceJob状态失败
                         break
@@ -301,6 +304,7 @@ class ApiRunner:
             elif _assert['assertType'] == "delimiter":
                 # 分隔符取值
                 delimiter_result = assert_delimiter(_assert['expressions'], response)
+                logger.info("分隔符匹配结果: {}".format(delimiter_result))
                 if delimiter_result == 'EXCEPTION':
                     logger.error(
                         "delimiter error：{}, interfaceJobId: {}, test_plan Id:{}".format(_assert['expressions'],
@@ -362,6 +366,8 @@ class ApiRunner:
         else:
             interface = InterfaceCacheModel.objects.get(id=interface_job.interface_id)
         extracts_dict = get_all_extracts(interface_job.test_plan_id, interface_job.api_test_plan_task_id)
+        extracts_dict['ts_10'] = ts_10()
+        extracts_dict['ts_13'] = ts_13()
         for key, value in extracts_dict.items():
             if '$%s' % key in interface.addr:
                 interface.addr = interface.addr.replace('$%s' % key, str(value), 10)
@@ -381,7 +387,7 @@ class ApiRunner:
                 interface.asserts = json.loads(json.dumps(interface.asserts).replace('$%s' % key, str(value), 10))
         interface.save()
 
-        # 将case job状态更新为RUNNING
+        # 将api job状态更新为RUNNING
         InterfaceJobModel.objects.filter(id=interface_job.id).update(state=ApiJobState.RUNNING)
         headers = interface.headers  # 请求头
         # 根据请求方式动态选择requests的请求方法
