@@ -1,8 +1,9 @@
 from kombu import Queue, Exchange
-from automation.settings import REDIS_SERVER, TIME_ZONE
+
+from automation.settings import REDIS_SERVER, RABBITMQ, TIME_ZONE
 
 # CELERY STUFF
-broker_url = 'amqp://admin:admin@127.0.0.1:5672//'
+broker_url = 'amqp://admin:admin@%s:5672//' % RABBITMQ
 result_backend = 'redis://%s:6379/2' % REDIS_SERVER
 accept_content = ['application/json']
 timezone = TIME_ZONE
@@ -53,5 +54,5 @@ task_routes = {
     'case_test_task_executor': {"queue": "case_test_task_executor",
                                 "routing_key": "case_test_task_executor"},
     'case_test_task_timing_executor': {"queue": "case_test_task_timing_executor",
-                                "routing_key": "case_test_task_timing_executor"},
+                                       "routing_key": "case_test_task_timing_executor"},
 }

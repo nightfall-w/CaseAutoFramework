@@ -1,5 +1,6 @@
 from django.db import models
 from django_jsonfield_backport.models import JSONField
+
 from standard.enum import InterFaceType
 
 
@@ -9,11 +10,12 @@ class InterfaceModel(models.Model):
     ]
     project = models.IntegerField(verbose_name="项目id", null=False, help_text="项目id")
     name = models.CharField(verbose_name="接口名称", max_length=50, null=False, help_text="接口名称")
-    desc = models.TextField(verbose_name="接口描述", null=True, blank=True,  default='', help_text="接口描述")
+    desc = models.TextField(verbose_name="接口描述", null=True, blank=True, default='', help_text="接口描述")
     addr = models.CharField(verbose_name="接口地址", null=False, max_length=1000, help_text="接口地址")
     request_mode = models.CharField(verbose_name="请求方式", choices=MODE_LIST, max_length=8,
                                     help_text="请求方式")
     headers = JSONField(verbose_name="请求头", null=True, default=dict, help_text="请求头")
+    params = JSONField(verbose_name="get请求参数", null=True, default=dict, help_text="get请求参数")
     formData = JSONField(verbose_name="formData", null=True, default=dict, help_text="表单数据包括文件")
     urlencoded = JSONField(verbose_name="x-www-form-urlencoded", null=True, default=dict,
                            help_text="url参数params,数据转换为键值对，&分隔后用?拼接在url后面")
@@ -47,6 +49,7 @@ class InterfaceCacheModel(models.Model):
                            help_text="url参数params,数据转换为键值对，&分隔后用?拼接在url后面")
     raw = JSONField(verbose_name="requestBody", null=True, default=dict,
                     help_text="可以上传任意格式的文本，可以上传text、json、xml、html等")
+    params = JSONField(verbose_name="get请求参数", null=True, default=dict, help_text="get请求参数")
     asserts = JSONField(verbose_name="断言", null=True, default=list, help_text="断言")
     extract = JSONField(verbose_name="出参", null=True, default=list, help_text="出参")
 
@@ -71,6 +74,7 @@ class InterfaceHistory(models.Model):
                            help_text="url参数params,数据转换为键值对，&分隔后用?拼接在url后面")
     raw = JSONField(verbose_name="requestBody", null=True, blank=True, default=dict,
                     help_text="可以上传任意格式的文本，可以上传text、json、xml、html等")
+    params = JSONField(verbose_name="get请求参数", null=True, default=dict, help_text="get请求参数")
     user = models.CharField(verbose_name="用户", max_length=40, null=False, help_text="用户")
 
     class Meta:

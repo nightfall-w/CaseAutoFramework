@@ -6,15 +6,18 @@ import time
 
 import redis
 from django.core.cache import cache
+from django.forms.models import model_to_dict
 
 from automation.settings import logger, BASE_DIR
 from case.models import GitCaseModel
 from celery_tasks import celery_app
 from testplan.models import CaseTestPlanTaskModel, CaseTestPlanModel, CaseJobModel
 from testplan.runner import ApiRunner, data_drive, CaseRunner
+from utils.common import current_time_format
 from utils.gitlab_tool import GitlabAPI
 from utils.job_status_enum import CaseTestPlanTaskState, BranchState
 from utils.redis_tool import RedisPoll
+from utils.snow import IdWorker
 
 
 # 由于是递归方式下载的所以要先创建项目相应目录
@@ -27,6 +30,9 @@ def create_dir(dir_name):
 
 @celery_app.task(name="branch_pull")
 def branch_pull(gitlab_info, project_id, branch_name):
+    """
+    录取gitlab指定分支代码
+    """
     instance = GitlabAPI(gitlab_url=gitlab_info.get('gitlab_url'),
                          private_token=gitlab_info.get('private_token'))
     project = instance.gl.projects.get(project_id)
@@ -66,7 +72,7 @@ def branch_pull(gitlab_info, project_id, branch_name):
                 logger.info("\033[0;32;40m开始下载文件: \033[0m{0}".format(file_list[info_file]))
                 code.write(content)
             finish_progress = float('%.2f' % ((index + 1) / file_list_len)) * 100
-            cache.set(cache_key + "progress", finish_progress)
+            cache.set(cache_key + "progress", finish_progress, 3)
         branch_obj = GitCaseModel.objects.get(gitlab_url=gitlab_info.get('gitlab_url'), gitlab_project_id=project.id,
                                               gitlab_project_name=project.name, branch_name=branch_name,
                                               )
@@ -112,7 +118,7 @@ def case_test_task_executor(case_task_id):
                             task_id=case_task_id)
         # case_task = CaseTestPlanTaskModel.objects.filter(id=case_task_id).first()
         case_task.refresh_from_db()
-        case_task.finish_num = case_task.finish_num + 1
+        case_task.finish_num += 1
         case_task.save()
     # case_task = CaseTestPlanTaskModel.objects.filter(id=case_task_id).first()
     case_task.refresh_from_db()
@@ -123,6 +129,7 @@ def case_test_task_executor(case_task_id):
     return True
 
 
+# noinspection PyUnresolvedReferences
 @celery_app.task(name="case_test_task_timing_executor")
 def case_test_task_timing_executor(project_id, case_testplan_uid):
     """
@@ -136,7 +143,9 @@ def case_test_task_timing_executor(project_id, case_testplan_uid):
         logger.error("case testplan uid: {} not found")
         return False
     case_paths = case_test_plan.case_paths
+    case_task_uid = "CASETASKTIMED_" + str(IdWorker(0, 1).get_id())
     case_test_plan_task = CaseTestPlanTaskModel.objects.create(test_plan_uid=case_testplan_uid,
+                                                               case_task_uid=case_task_uid,
                                                                state=CaseTestPlanTaskState.WAITING,
                                                                case_job_number=len(case_paths),
                                                                finish_num=0)
@@ -179,7 +188,7 @@ def case_test_job_executor(case_job_id, project_id, test_plan_uid, task_id):
             try:
                 # 修改已完成数
                 case_task = CaseTestPlanTaskModel.objects.get(id=task_id)
-                case_task.finish_num = case_task.finish_num + 1
+                case_task.finish_num += 1
                 case_task.save()
                 if case_task.finish_num == case_task.case_job_number:
                     # 已完成数等于case总数 那整个case test plan全部完成

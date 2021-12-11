@@ -76,6 +76,7 @@ class InterfaceTestSerializer(serializers.ModelSerializer):
             "headers": {'required': False},
             "formData": {'required': False},
             "urlencoded": {'required': False},
+            "params": {'required': False},
             "raw": {'required': False}
         }
         validators = [
@@ -89,10 +90,7 @@ class InterfaceTestSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         for item in attrs:
-            if item in ['headers', 'formData', 'urlencoded', 'raw']:
-                try:
-                    json.loads(attrs[item])
-                except Exception as es:
-                    logger.error(es)
+            if item in ['headers', 'formData', 'urlencoded', 'asserts', 'parameters']:
+                if not any([isinstance(attrs[item], dict), isinstance(attrs[item], list)]):
                     raise serializers.ValidationError('字段{}不是json格式'.format(item))
         return attrs

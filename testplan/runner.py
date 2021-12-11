@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+import copy
 import itertools
 import json
 import os
@@ -15,7 +16,8 @@ from interface.models import InterfaceJobModel, InterfaceModel, InterfaceCacheMo
 from project.models import ProjectModel
 from standard.enum import InterFaceType
 from testplan import operation
-from testplan.models import ApiTestPlanTaskModel, CaseTestPlanModel, CaseJobModel, ApiTestPlanModel
+from testplan.models import ApiTestPlanTaskModel, CaseTestPlanModel, CaseJobModel, ApiTestPlanModel, \
+    CaseTestPlanTaskModel
 from utils.common import ts_10, ts_13
 from utils.job_status_enum import ApiJobState, ApiTestPlanTaskState, CaseJobState
 
@@ -87,6 +89,20 @@ def is_exist_variable(interface_instance):
     return is_exist
 
 
+def replace_nested(source_data, search_string, replacement):
+    """
+    json替换指定值
+    """
+    source_data = copy.deepcopy(source_data)
+    for key in source_data.keys():
+        if type(source_data[key]) is dict:
+            replace_nested(source_data[key], search_string, replacement)
+        else:
+            if source_data[key] == search_string:
+                source_data[key] = replacement
+    return source_data
+
+
 def data_drive(interfaceIds, plan_id, api_test_plan_task_id):
     for interfaceId in interfaceIds:
         interface = InterfaceModel.objects.get(id=interfaceId)
@@ -136,44 +152,23 @@ def data_drive(interfaceIds, plan_id, api_test_plan_task_id):
                             item = list(item)
                             item[keys_index] = [item[keys_index], ]
                             item = tuple(item)
-
+                        value = item[keys_index][key_index]
                         if '$%s' % key in interfaceCache.addr:
-                            interfaceCache.addr = interfaceCache.addr.replace('$%s' % key, item[keys_index][key_index],
-                                                                              10)
+                            interfaceCache.addr = interfaceCache.addr.replace('$%s' % key, value, 10)
                         if '$%s' % key in interfaceCache.name:
-                            interfaceCache.name = interfaceCache.name.replace('$%s' % key, item[keys_index][key_index],
-                                                                              10)
+                            interfaceCache.name = interfaceCache.name.replace('$%s' % key, value, 10)
                         if '$%s' % key in interfaceCache.desc:
-                            interfaceCache.desc = interfaceCache.desc.replace('$%s' % key, item[keys_index][key_index],
-                                                                              10)
+                            interfaceCache.desc = interfaceCache.desc.replace('$%s' % key, value, 10)
                         if '$%s' % key in json.dumps(interfaceCache.headers):
-                            interfaceCache.headers = json.loads(json.dumps(interfaceCache.headers).replace('$%s' % key,
-                                                                                                           item[
-                                                                                                               keys_index][
-                                                                                                               key_index],
-                                                                                                           10))
+                            interfaceCache.headers = replace_nested(interfaceCache.headers, '$%s' % key, value)
                         if '$%s' % key in json.dumps(interfaceCache.formData):
-                            interfaceCache.formData = json.loads(
-                                json.dumps(interfaceCache.formData).replace('$%s' % key,
-                                                                            item[keys_index][
-                                                                                key_index], 10))
+                            interfaceCache.formData = replace_nested(interfaceCache.formData, '$%s' % key, value)
                         if '$%s' % key in json.dumps(interfaceCache.urlencoded):
-                            interfaceCache.urlencoded = json.loads(
-                                json.dumps(interfaceCache.urlencoded).replace('$%s' % key,
-                                                                              item[keys_index][
-                                                                                  key_index],
-                                                                              10))
+                            interfaceCache.urlencoded = replace_nested(interfaceCache.urlencoded, '$%s' % key, value)
                         if '$%s' % key in json.dumps(interfaceCache.raw):
-                            interfaceCache.raw = json.loads(json.dumps(interfaceCache.raw).replace('$%s' % key,
-                                                                                                   item[keys_index][
-                                                                                                       key_index],
-                                                                                                   10))
+                            interfaceCache.raw = replace_nested(interfaceCache.raw, '$%s' % key, value)
                         if '$%s' % key in json.dumps(interfaceCache.asserts):
-                            interfaceCache.asserts = json.loads(json.dumps(interfaceCache.asserts).replace('$%s' % key,
-                                                                                                           item[
-                                                                                                               keys_index][
-                                                                                                               key_index],
-                                                                                                           10))
+                            interfaceCache.asserts = replace_nested(interfaceCache.asserts, '$%s' % key, value)
 
                         interfaceCache.save()
                 InterfaceJobModel.objects.create(interfaceType=InterFaceType.CACHE.value,
@@ -378,7 +373,7 @@ class ApiRunner:
         # 添加变量函数到变量池
         extracts_dict['ts_10'] = ts_10()
         extracts_dict['ts_13'] = ts_13()
-        
+
         for key, value in extracts_dict.items():
             if '$%s' % key in interface.addr:
                 interface.addr = interface.addr.replace('$%s' % key, str(value), 10)
@@ -388,6 +383,8 @@ class ApiRunner:
                 interface.desc = interface.desc.replace('$%s' % key, str(value), 10)
             if '$%s' % key in json.dumps(interface.headers):
                 interface.headers = json.loads(json.dumps(interface.headers).replace('$%s' % key, str(value), 10))
+            if '$%s' % key in json.dumps(interface.params):
+                interface.params = json.loads(json.dumps(interface.params).replace('$%s' % key, str(value), 10))
             if '$%s' % key in json.dumps(interface.formData):
                 interface.formData = json.loads(json.dumps(interface.formData).replace('$%s' % key, str(value), 10))
             if '$%s' % key in json.dumps(interface.urlencoded):
@@ -404,17 +401,21 @@ class ApiRunner:
         # 根据请求方式动态选择requests的请求方法
         try:
             requests_fun = getattr(self.session, interface.get_request_mode_display().lower())
-            if interface.formData:  # form-data文件请求
-                data = interface.formData
-                response = requests_fun(url=interface.addr, headers=headers, data=data)
-            elif interface.urlencoded:  # form 表单
-                data = interface.urlencoded
+            if interface.request_mode == "GET":
+                data = interface.params
                 response = requests_fun(url=interface.addr, headers=headers, params=data)
-            elif interface.raw:  # json请求
-                data = json.dumps(interface.raw).encode("utf-8")
-                response = requests_fun(url=interface.addr, headers=headers, data=data)
             else:
-                response = requests_fun(url=interface.addr, headers=headers)
+                if interface.formData:  # form-data文件请求
+                    data = interface.formData
+                    response = requests_fun(url=interface.addr, headers=headers, data=data)
+                elif interface.urlencoded:  # form 表单
+                    data = interface.urlencoded
+                    response = requests_fun(url=interface.addr, headers=headers, data=data)
+                elif interface.raw:  # json请求
+                    data = json.dumps(interface.raw).encode("utf-8")
+                    response = requests_fun(url=interface.addr, headers=headers, data=data)
+                else:
+                    response = requests_fun(url=interface.addr, headers=headers)
             extracts_result = self.dispose_response(interface=interface, response=response)
             InterfaceJobModel.objects.filter(id=interface_job.id).update(extracts=extracts_result)
         except Exception as es:
@@ -480,34 +481,92 @@ class CaseRunner:
         """
         case_job.state = CaseJobState.RUNNING
         case_job.save()
-        report_name = case_job.case_path.split('/')[-1].split('.')[0] + '.html'
-        result_log_name = case_job.case_path.split('/')[-1].split('.')[0] + '.log'
-        xml_name = case_job.case_path.split('/')[-1].split('.')[0] + '.xml'
+
+        case_path = case_job.case_path
+        file_path, file_name = os.path.split(case_path)
+
+        report_name = case_path.split('/')[-1].split('.')[0] + '.html'
+        result_log_name = case_path.split('/')[-1].split('.')[0] + '.log'
+        xml_name = case_path.split('/')[-1].split('.')[0] + '.xml'
+
         report_path = os.path.join(MEDIA_ROOT, 'html-report', str(project_id), test_plan_uid, str(task_id))
         try:
             if not os.path.exists(report_path):
                 os.makedirs(report_path)
         except FileExistsError:
             pass
-        try:
-            p = subprocess.Popen(
-                'pytest {} -vv -s --html={} --self-contained-html --result-log={} --junit-xml={}'.format(
-                    os.path.join(settings.BASE_DIR, 'case_house', case_job.case_path),
-                    os.path.join(report_path, report_name), os.path.join(report_path, result_log_name),
-                    os.path.join(report_path, xml_name)),
-                shell=True, stdout=subprocess.PIPE)
-            out = p.stdout
-            read_data = out.read().decode("utf-8", "ignore")
-            # case_job.log = read_data
-            case_job.report_path = '/media/html-report/{}/{}/{}/{}'.format(project_id, test_plan_uid, task_id,
-                                                                           report_name)
-            case_result = read_data.split('\n')[-2]
-            case_job.result = case_result.replace('=', '').strip(' ')
-            case_job.state = CaseJobState.FINISH
-            case_job.save()
-            return True
-        except Exception as es:
-            logger.error("case job excepted:{}".format(es))
-            case_job.state = CaseJobState.FAILED
-            case_job.save()
-            return False
+
+        if 'test' in os.path.splitext(file_name)[0] and os.path.splitext(file_name)[1] == '.py':
+            # 是pytest 脚本
+            try:
+                p = subprocess.Popen(
+                    '/root/.virtualenvs/testtools/bin/pytest {} -vv -s --html={} --self-contained-html '
+                    '--result-log={} --junit-xml={}'.format(
+                        os.path.join(settings.BASE_DIR, 'case_house', case_path),
+                        os.path.join(report_path, report_name), os.path.join(report_path, result_log_name),
+                        os.path.join(report_path, xml_name)),
+                    shell=True, stdout=subprocess.PIPE)
+                out = p.stdout
+                read_data = out.read().decode("utf-8", "ignore")
+                # case_job.log = read_data
+                case_job.report_path = '/media/html-report/{}/{}/{}/{}'.format(project_id, test_plan_uid, task_id,
+                                                                               report_name)
+                case_result = read_data.split('\n')[-2]
+                case_job.result = case_result.replace('=', '').strip(' ')
+                case_job.state = CaseJobState.FINISH
+                case_job.save()
+                return True
+            except Exception as es:
+                logger.error("case job excepted:{}".format(es))
+                case_job.state = CaseJobState.FAILED
+                case_job.save()
+                return False
+        elif os.path.splitext(file_name)[1] == '.py':
+            try:
+                p = subprocess.Popen(
+                    '/root/.virtualenvs/testtools/bin/python3 {}'.format(
+                        os.path.join(settings.BASE_DIR, 'case_house', case_path)),
+                    shell=True, stdout=subprocess.PIPE)
+                out = p.stdout
+                read_data = out.read().decode("utf-8", "ignore")
+                case_job.log = read_data
+                case_job.state = CaseJobState.FINISH
+                case_job.save()
+                return True
+            except Exception as es:
+                logger.error("case job excepted:{}".format(es))
+                case_job.state = CaseJobState.FAILED
+                case_job.save()
+                return False
+        elif os.path.splitext(file_name)[1] == '.yml':
+            try:
+                case_task_id = case_job.case_task_id
+                test_plan_uid = CaseTestPlanTaskModel.objects.get(id=case_task_id).test_plan_uid
+                env_file = CaseTestPlanModel.objects.get(plan_id=test_plan_uid).env_file
+                if env_file:
+                    p = subprocess.Popen(
+                        '/root/.virtualenvs/testtools/bin/hrun {} --dot-env-path {} --report-file {}'.format(
+                            os.path.join(settings.BASE_DIR, 'case_house', case_path),
+                            os.path.join(settings.BASE_DIR, 'case_house', env_file),
+                            os.path.join(report_path, report_name)),
+                        shell=True, stdout=subprocess.PIPE)
+                else:
+                    p = subprocess.Popen(
+                        '/root/.virtualenvs/testtools/bin/hrun {} --report-file {}'.format(
+                            os.path.join(settings.BASE_DIR, 'case_house', case_path),
+                            os.path.join(report_path, report_name)),
+                        shell=True, stdout=subprocess.PIPE)
+                out = p.stdout
+                read_data = out.read().decode("utf-8", "ignore")
+                case_job.report_path = '/media/html-report/{}/{}/{}/{}'.format(project_id, test_plan_uid, task_id,
+                                                                               report_name)
+                case_job.log = read_data
+                # case_job.result = case_result.replace('=', '').strip(' ')
+                case_job.state = CaseJobState.FINISH
+                case_job.save()
+                return True
+            except Exception as es:
+                logger.error("case job excepted:{}".format(es))
+                case_job.state = CaseJobState.FAILED
+                case_job.save()
+                return False

@@ -1,8 +1,10 @@
 # -*- coding:utf-8 -*-
+import re
+
 from django.contrib.auth import login
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import User
-import re
+from django_auth_ldap.backend import LDAPBackend
 
 
 def jwt_response_payload_handler(token, user, request):
@@ -15,6 +17,8 @@ def jwt_response_payload_handler(token, user, request):
         'token': token,
         'user_id': user.id,
         'username': user.username,
+        'display_name': user.first_name,
+        'email': user.email
     }
 
 
@@ -38,12 +42,24 @@ def get_user_by_account(account):
         return user
 
 
+def ldap_authenticate(request, username, password):
+    return LDAPBackend().authenticate(request, username, password)
+
+
 class UsernameMobileAuthBackend(ModelBackend):
     """
     自定义用户名或邮箱认证
     """
 
-    def authenticate(self, username=None, password=None, **kwargs):
+    def authenticate(self, request, username=None, password=None, **kwargs):
+        # ldap认证
+        try:
+            user = ldap_authenticate(request, username, password)
+            if user:
+                return user
+        except Exception as e:
+            pass
+        # mysql数据库user表验证
         user = get_user_by_account(username)
         if user is not None and user.check_password(password):
             return user

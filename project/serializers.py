@@ -1,11 +1,14 @@
 import json
 
-from project.models import ProjectModel
 from rest_framework import serializers
+
+from project.models import ProjectModel
+from user.models import get_user_by_username
 
 
 class ProjectSerializer(serializers.ModelSerializer):
     create_date = serializers.SerializerMethodField()
+    user_info = serializers.SerializerMethodField()
     env_variable = serializers.JSONField()
 
     class Meta:
@@ -13,8 +16,8 @@ class ProjectSerializer(serializers.ModelSerializer):
         exclude = ['create_time', 'update_time']
         read_only_fields = ["id", "create_time", "update_time"]
         extra_kwargs = {
-            "create_by": {'required': False},
-            "update_by": {'required': False}
+            "create_user": {'required': False},
+            "update_user": {'required': False}
         }
         depth = 1
 
@@ -23,3 +26,6 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     def get_env_dict(self, obj):
         return json.loads(obj.env_variable)
+
+    def get_user_info(self, obj):
+        return get_user_by_username(obj.create_user)

@@ -4,7 +4,8 @@ import logging
 import os
 import time
 
-from kombu import Queue, Exchange
+import ldap
+from django_auth_ldap.config import LDAPSearch
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -47,14 +48,14 @@ INSTALLED_APPS = [
     'project',
     'report',
     'testplan',
-    'user'
+    'user',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -92,13 +93,15 @@ DATABASES = {
         'NAME': 'automation',
         'USER': 'root',
         'PASSWORD': 'root123',
-        'HOST': '127.0.0.1',
+        'HOST': 'localhost',
         'PORT': 3306,
+        'OPTIONS': {'charset': 'utf8mb4', },
     }
 }
 
 # REDIS SERVER
-REDIS_SERVER = 'localhost'
+REDIS_SERVER = '127.0.0.1'
+RABBITMQ = '127.0.0.1'
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -128,6 +131,23 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 10
+}
+
+AUTHENTICATION_BACKENDS = [
+    "user.JWTResponseUser.UsernameMobileAuthBackend"
+]
+
+base_dn = ''  # 请求的域名后缀为：cloud.cn
+AUTH_LDAP_SERVER_URI = ''  # LDAP系统的地址及端口号
+AUTH_LDAP_BIND_DN = ''  # 以admin身份查找用户及相关信息
+AUTH_LDAP_BIND_PASSWORD = ''  # admin账号的密码
+AUTH_LDAP_USER_SEARCH = LDAPSearch('ou=People,%s' % base_dn, ldap.SCOPE_SUBTREE, "(uid=%(user)s)")
+# 第一个参数指定查询目录，第三个参数是过滤条件，过滤条件可以很复杂，有需要请查看相关文档．
+AUTH_LDAP_ALWAYS_UPDATE_USER = True
+AUTH_LDAP_USER_ATTR_MAP = {
+    "first_name": "givenName",
+    "last_name": "sn",
+    "email": "mail"
 }
 
 JWT_AUTH = {
@@ -174,7 +194,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.mxhichina.com'  # 如果是 163 改成 smtp.163.com
 EMAIL_PORT = 465
-EMAIL_HOST_USER = 'wangbaojun@flashhold.com'  # 在这里填入您的邮箱账号
+EMAIL_HOST_USER = ''  # 在这里填入您的邮箱账号
 EMAIL_HOST_PASSWORD = 'xxxxxxxxx'  # 请在这里填上您自己邮箱的授权码
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 EMAIL_USE_SSL = True

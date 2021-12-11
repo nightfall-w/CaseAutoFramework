@@ -1,4 +1,5 @@
 from django.urls import re_path
+
 from case.views import CaseTree, GitlabBranch, GitlabPull, CaseCollectList
 
 app_name = 'case'

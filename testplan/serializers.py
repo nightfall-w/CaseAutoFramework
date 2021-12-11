@@ -6,12 +6,14 @@ from rest_framework.validators import UniqueTogetherValidator
 from interface.models import InterfaceJobModel, InterfaceCacheModel, InterfaceModel
 from testplan.models import ApiTestPlanModel, CaseTestPlanModel, CaseTestPlanTaskModel, ApiTestPlanTaskModel, \
     CaseJobModel
+from user.models import get_user_by_username
 from utils.job_status_enum import CaseTestPlanTaskState, ApiTestPlanTaskState
 
 
 class ApiTestPlanSerializer(serializers.ModelSerializer):
     running_task_number = serializers.SerializerMethodField()
     create_date_format = serializers.SerializerMethodField()
+    user_info = serializers.SerializerMethodField()
 
     class Meta:
         model = ApiTestPlanModel
@@ -34,6 +36,9 @@ class ApiTestPlanSerializer(serializers.ModelSerializer):
     def get_create_date_format(self, obj):
         return obj.create_date.strftime("%Y-%m-%d %H:%M:%S")
 
+    def get_user_info(self, obj):
+        return get_user_by_username(obj.create_user)
+
     def create(self, validated_data):
         validated_data["create_user"] = self.context["request"].user
         validated_data["plan_id"] = uuid.uuid4()
@@ -43,6 +48,7 @@ class ApiTestPlanSerializer(serializers.ModelSerializer):
 class CaseTestPlanSerializer(serializers.ModelSerializer):
     running_task_number = serializers.SerializerMethodField()
     create_date_format = serializers.SerializerMethodField()
+    user_info = serializers.SerializerMethodField()
 
     class Meta:
         model = CaseTestPlanModel
@@ -68,6 +74,9 @@ class CaseTestPlanSerializer(serializers.ModelSerializer):
 
     def get_create_date_format(self, obj):
         return obj.create_date.strftime("%Y-%m-%d %H:%M:%S")
+
+    def get_user_info(self, obj):
+        return get_user_by_username(obj.create_user)
 
     def create(self, validated_data):
         validated_data["create_user"] = self.context["request"].user

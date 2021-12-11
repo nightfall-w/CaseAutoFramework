@@ -1,4 +1,5 @@
 import redis
+
 from automation.settings import REDIS_SERVER
 
 

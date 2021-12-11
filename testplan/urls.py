@@ -1,4 +1,5 @@
 from django.urls import re_path
+
 from testplan.views import TriggerApiPlan, TriggerCasePlan, CaseTask, ApiTask
 
 app_name = 'testPlan'

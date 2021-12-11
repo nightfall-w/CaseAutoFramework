@@ -1,6 +1,7 @@
 from django.urls import re_path
-from user.views import RegisterView
 from rest_framework_jwt.views import obtain_jwt_token, refresh_jwt_token
+
+from user.views import RegisterView
 
 app_name = 'user'
 urlpatterns = [

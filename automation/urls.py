@@ -10,6 +10,7 @@ from interface.views import InterfaceViewSet, InterfaceTestViewSet
 from project.views import ProjectViewSet
 from testplan.views import ApiTestPlanViewSet, CaseTestPlanViewSet, CaseJobViewSet, ApiJobViewSet
 
+
 router = DefaultRouter()
 router.register(r'project', ProjectViewSet, basename='api-project')
 router.register(r'interface', InterfaceViewSet, basename='api-interface')
@@ -22,13 +23,14 @@ router.register(r'gitlabAuthentication', GitLabAddToken, basename='api-case')
 # router.register(r'case', CaseViewSet, basename='api-case')
 # router.register(r'caseType', CaseTypeViewSet, basename='api-case-type')
 
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/', include(router.urls)),
-    path('api/docs/', include_docs_urls(title='API文档')),
-    path('api/case/', include('case.urls', namespace='case')),
-    path('api/user/', include('user.urls', namespace='user')),
-    path('api/testPlan/', include('testplan.urls', namespace='testPlan')),
-    path('api/report/', include('report.urls', namespace='report')),
-    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': MEDIA_ROOT})
+    path('cap/admin/', admin.site.urls),
+    path('cap/api/', include(router.urls)),
+    path('cap/api/docs/', include_docs_urls(title='API文档')),
+    path('cap/api/case/', include('case.urls', namespace='case')),
+    path('cap/api/user/', include('user.urls', namespace='user')),
+    path('cap/api/testPlan/', include('testplan.urls', namespace='testPlan')),
+    path('cap/api/report/', include('report.urls', namespace='report')),
+    re_path(r'^cap/media/(?P<path>.*)$', serve, {'document_root': MEDIA_ROOT})
 ]

@@ -21,7 +21,7 @@ class CaseStatusManager(StatusManager):
     def get_task_result(self, request_data):
         return CaseTestPlanTaskModel.objects.filter(test_plan_uid=request_data.get('case_test_plan_uid')).order_by(
             '-id').values(
-            'test_plan_uid', 'id', 'state',
+            'case_task_uid', 'test_plan_uid', 'id', 'state',
             'finish_num', 'create_date', 'used_time')[request_data.get('offset'):request_data.get('limit')]
 
     @database_sync_to_async
@@ -37,8 +37,8 @@ class ApiStatusManager(StatusManager):
     def get_task_result(self, request_data):
         return ApiTestPlanTaskModel.objects.filter(test_plan_uid=request_data.get('api_test_plan_uid')).order_by(
             '-id').values(
-            'test_plan_uid', 'state', 'id', 'api_job_number', 'create_date', 'used_time',
-                                                                             'success_num', 'failed_num')[
+            'api_task_uid', 'test_plan_uid', 'state', 'id', 'api_job_number', 'create_date', 'used_time',
+            'success_num', 'failed_num')[
                request_data.get('offset'):request_data.get('limit')]
 
     @database_sync_to_async

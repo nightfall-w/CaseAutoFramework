@@ -25,9 +25,9 @@ class InterfaceViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.GET.get('projectId'):
-            return InterfaceModel.objects.filter(project=self.request.GET.get('projectId'))
+            return InterfaceModel.objects.filter(project=self.request.GET.get('projectId')).order_by("-id")
         else:
-            return InterfaceModel.objects.all()
+            return InterfaceModel.objects.all().order_by("-id")
 
     def list(self, request, *args, **kwargs):
         """
@@ -83,23 +83,34 @@ class InterfaceTestViewSet(viewsets.ModelViewSet):
             serializer.save()
         interface = serializer.data
         requests_fun = getattr(requests, interface.get('request_mode').lower())
-        headers = json.loads(interface.get('headers', '{}'))  # 请求头
+        headers = interface.get('headers', {})  # 请求头
+        request_body = None
         try:
-            if json.loads(interface.get('formData', '{}')):  # form-data文件请求
-                data = json.loads(interface['formData'])
-                response = requests_fun(url=interface.get('addr'), headers=headers, data=data)
-            elif json.loads(interface.get('urlencoded', '{}')):  # form 表单
-                data = json.loads(interface.get('urlencoded'))
+            if interface['request_mode'] == "GET":
+                data = interface['params']
                 response = requests_fun(url=interface.get('addr'), headers=headers, params=data)
-            elif json.loads(interface.get('raw', '{}')):  # json请求
-                response = requests_fun(url=interface.get('addr'), headers=headers,
-                                        data=interface.get('raw').encode("utf-8"))
             else:
-                response = requests_fun(url=interface.get('addr'), headers=headers)
-            request_headers = json.dumps(dict(response.request.headers))
-            response_headers = json.dumps(dict(response.headers))
+                if interface.get('formData', {}):  # form-data文件请求
+                    request_body = data = interface['formData']
+                    response = requests_fun(url=interface.get('addr'), headers=headers, data=data)
+                elif interface.get('urlencoded', {}):  # urlencoded
+                    request_body = data = interface.get('urlencoded')
+                    response = requests_fun(url=interface.get('addr'), headers=headers, data=data)
+                elif interface.get('raw', {}):  # json请求
+                    request_body = interface.get('raw')
+                    data = json.dumps(interface.get('raw')).encode("utf-8")
+                    response = requests_fun(url=interface.get('addr'), headers=headers,
+                                            data=data)
+                else:
+                    response = requests_fun(url=interface.get('addr'), headers=headers)
+            request_headers = response.request.headers
+            request_content_type = request_headers.get("Content-Type")
+            response_headers = response.headers
             return Response(
-                {"response": response.text, "request_headers": request_headers, "response_headers": response_headers,
+                {"response": response.json() if "application/json" in response_headers.get(
+                    "Content-Type") else response.text, "request_headers": request_headers,
+                 "request_body": request_body, "request_content_type": request_content_type,
+                 "response_headers": response_headers,
                  "status_code": response.status_code,
                  "elapsed": response.elapsed.total_seconds()})
         except Exception as es:

@@ -34,6 +34,8 @@ class ResultConsumer(WebsocketConsumer):
                     project_id) + "-" + "branch_name:" + branch_name
                 branch_status = cache.get(cache_key)
                 progress = cache.get(cache_key + "progress")
+                if progress == 100:
+                    cache.set(cache_key + "progress", 0)
                 if not branch_status:
                     # 缓存中没有值 从mysql读取
                     gitlab_info = GitlabModel.objects.filter(private_token=private_token).first()

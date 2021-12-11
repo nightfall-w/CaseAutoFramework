@@ -18,10 +18,10 @@ from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 from automation.settings import logger, TIME_ZONE
 from celery_tasks.tasks import api_testplan_executor, case_test_task_executor, case_test_job_executor
 from interface.models import InterfaceJobModel
-from project.models import ProjectModel
 from testplan.models import ApiTestPlanModel, ApiTestPlanTaskModel, CaseTestPlanModel, CaseTestPlanTaskModel, \
     CaseJobModel
 from utils.job_status_enum import ApiTestPlanTaskState, CaseTestPlanTaskState
+from utils.snow import IdWorker
 from .runner import CaseRunner
 from .serializers import ApiTestPlanSerializer, CaseTestPlanSerializer, CaseTaskSerializer, InterfaceTaskSerializer, \
     CaseJobSerializer, InterfaceJobSerializer
@@ -128,7 +128,8 @@ class TriggerApiPlan(APIView):
         if not api_testplan:
             return Response({"error": "testplanId为：{}不存在".format(testplan_id)})
         interfaceIds = json.loads(api_testplan.interfaceIds)
-        api_test_plan_task = ApiTestPlanTaskModel.objects.create(test_plan_uid=testplan_id,
+        api_task_uid = "APITASK_" + str(IdWorker(0, 0).get_id())
+        api_test_plan_task = ApiTestPlanTaskModel.objects.create(test_plan_uid=testplan_id, api_task_uid=api_task_uid,
                                                                  state=ApiTestPlanTaskState.WAITING, api_job_number=0,
                                                                  success_num=0, failed_num=0)
         # 使用celery task 处理testplan runner
@@ -146,7 +147,7 @@ class CaseTestPlanViewSet(viewsets.ModelViewSet):
         coreapi.Field(name="case_testplan_name", required=True, location="query",
                       schema=coreschema.String(description='case测试计划名称'), ),
         coreapi.Field(name="timer_enable", required=True, location="form",
-                      schema=coreschema.String(description='定时任务编排参数')),
+                      schema=coreschema.String(description='是否开始定时器')),
         coreapi.Field(name="crontab", required=True, location="form",
                       schema=coreschema.String(description='定时任务编排参数')),
     ])
@@ -222,35 +223,40 @@ class CaseTestPlanViewSet(viewsets.ModelViewSet):
             # forcibly invalidate the prefetch cache on the instance.
             instance._prefetched_objects_cache = {}
 
-        if request.data.get('crontab'):
-            crontab = request.data.get('crontab').replace('?', '*')
-            crontab = crontab.split(' ')
-            if len(crontab) == 7:
-                # 包含秒 包含年
-                crontab = crontab[1:-1]
-            elif len(crontab) == 6:
-                # 包含秒 不包含年
-                crontab = crontab[1:]
-            crontab_kwargs = {
-                'minute': crontab[0],
-                'hour': crontab[1],
-                'day_of_week': crontab[4],
-                'day_of_month': crontab[2],
-                'month_of_year': crontab[3]
-            }
-        schedule, _ = CrontabSchedule.objects.get_or_create(
-            minute=crontab_kwargs.get('minute', '*'),
-            hour=crontab_kwargs.get('hour', '*'),
-            day_of_week=crontab_kwargs.get('day_of_week', '*'),
-            day_of_month=crontab_kwargs.get('day_of_month', '*'),
-            month_of_year=crontab_kwargs.get('month_of_year', '*'),
-            timezone=pytz.timezone(TIME_ZONE))
-
         if not request.data.get('timer_enable'):
-            PeriodicTask.objects.filter(
+            periodic_tasks = PeriodicTask.objects.filter(
                 name__icontains='case测试计划定时任务' + '-' + serializer.data.get('plan_id'),
-            ).update(enabled=False, crontab=schedule)
+            )
+            if len(periodic_tasks) >= 0:
+                for task in periodic_tasks:
+                    task.enabled = False
+                    task.save()
         else:
+            if request.data.get('crontab'):
+                crontab = request.data.get('crontab').replace('?', '*')
+                crontab = crontab.split(' ')
+                if len(crontab) == 7:
+                    # 包含秒 包含年
+                    crontab = crontab[1:-1]
+                elif len(crontab) == 6:
+                    # 包含秒 不包含年
+                    crontab = crontab[1:]
+                crontab_kwargs = {
+                    'minute': crontab[0],
+                    'hour': crontab[1],
+                    'day_of_week': crontab[4],
+                    'day_of_month': crontab[2],
+                    'month_of_year': crontab[3]
+                }
+                schedule, _ = CrontabSchedule.objects.get_or_create(
+                    minute=crontab_kwargs.get('minute', '*'),
+                    hour=crontab_kwargs.get('hour', '*'),
+                    day_of_week=crontab_kwargs.get('day_of_week', '*'),
+                    day_of_month=crontab_kwargs.get('day_of_month', '*'),
+                    month_of_year=crontab_kwargs.get('month_of_year', '*'),
+                    timezone=pytz.timezone(TIME_ZONE))
+            else:
+                raise ValueError("参数crontab 不能为空")
             periodic_task = PeriodicTask.objects.filter(
                 name__icontains='case测试计划定时任务' + '-' + serializer.data.get('plan_id'),
             )
@@ -315,7 +321,22 @@ class CaseJobViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        return CaseJobModel.objects.filter(case_task_id=self.request.GET.get('task_id'))
+        task_id = self.request.GET.get('task_id')
+        if task_id:
+            return CaseJobModel.objects.filter(case_task_id=task_id)
+        else:
+            return CaseJobModel.objects.all()
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        response_data = serializer.data
+        if instance.log:
+            log = instance.log.split('\n')[-200:]
+            response_data['log'] = "\n".join(log)
+        else:
+            response_data['log'] = ""
+        return Response(response_data)
 
 
 @method_decorator(csrf_exempt, name='post')
@@ -343,7 +364,9 @@ class TriggerCasePlan(APIView):
         if not case_test_plan:
             return Response({"error": "testplan {} not found".format(testplan_id)}, status=status.HTTP_404_NOT_FOUND)
         case_paths = case_test_plan.case_paths
+        case_task_uid = "CASETASK_" + str(IdWorker(0, 0).get_id())
         case_test_plan_task = CaseTestPlanTaskModel.objects.create(test_plan_uid=testplan_id,
+                                                                   case_task_uid=case_task_uid,
                                                                    state=CaseTestPlanTaskState.WAITING,
                                                                    case_job_number=len(case_paths),
                                                                    finish_num=0)
