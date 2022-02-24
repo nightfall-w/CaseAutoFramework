@@ -170,7 +170,7 @@ CACHES = {
 # 使用redis保存session数据
 ESSION_SAVE_EVERY_REQUEST = False  # 如果设置为True,django为每次request请求都保存session的内容，默认为False
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 3  # 设置SESSION的过期时间，单位是秒，默认是两周
-SESSION_ENGINE = 'redis_sessions.session'  # 使用redis作为session存储介质
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'  # 使用redis作为session存储介质
 SESSION_REDIS_HOST = REDIS_SERVER
 SESSION_REDIS_PORT = 6379
 SESSION_REDIS_DB = 4  # 选择存储槽
