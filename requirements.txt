@@ -6,7 +6,7 @@ async-generator==1.10
 async-timeout==3.0.1
 atomicwrites==1.4.0
 attrs==20.1.0
-autobahn==20.7.1
+autobahn==20.12.3
 Automat==20.2.0
 autopep8==1.5.3
 billiard==3.6.3.0
