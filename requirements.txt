@@ -44,7 +44,7 @@ djangorestframework-jwt==1.11.0
 dnspython==1.16.0
 dwebsocket==0.5.12
 et-xmlfile==1.1.0
-eventlet==0.25.2
+eventlet==0.31.0
 filetype==1.0.7
 flower==0.9.7
 funky==0.0.2
