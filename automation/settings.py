@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_jsonfield_backport',
     'case',
+    'daphne',
     'interface',
     'project',
     'report',
