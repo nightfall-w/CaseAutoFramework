@@ -14,6 +14,7 @@ from django.conf import settings
 from automation.settings import MEDIA_ROOT, logger
 from interface.models import InterfaceJobModel, InterfaceModel, InterfaceCacheModel
 from project.models import ProjectModel
+from standard.config import ConfigParser
 from standard.enum import InterFaceType
 from testplan import operation
 from testplan.models import ApiTestPlanTaskModel, CaseTestPlanModel, CaseJobModel, ApiTestPlanModel, \
@@ -435,10 +436,10 @@ class ApiRunner:
         test_plan_task.save()
         for interfaceJob in interfaceJobs:
             self.handler(interfaceJob)
-            # upInterfaces = InterfaceJobModel.objects.get(id=interfaceJob.id)
+
             interfaceJob.refresh_from_db()  # 载入字段更新过后的对象或查询集 避免拿到缓存在内存的老数据
             test_plan_task.refresh_from_db()
-            # if upInterfaces.state == ApiJobState.SUCCESS:
+
             if interfaceJob.state == ApiJobState.SUCCESS:
                 test_plan_task.success_num = test_plan_task.success_num + 1
                 test_plan_task.save()
@@ -479,10 +480,18 @@ class CaseRunner:
         :param task_id:
         :return:
         """
+        default_venv = ConfigParser.get_config('python_venv', 'venv_path')
         case_job.state = CaseJobState.RUNNING
         case_job.save()
 
         case_path = case_job.case_path
+        case_dir = '/'.join(case_path.split('/')[0:3])
+        case_venv = os.path.join(settings.BASE_DIR, 'case_house', case_dir, 'venv')
+        cmd_path = os.path.join(settings.BASE_DIR, 'case_house', case_dir)
+        if os.path.exists(case_venv):
+            venv_path = case_venv
+        else:
+            venv_path = default_venv
         file_path, file_name = os.path.split(case_path)
 
         report_name = case_path.split('/')[-1].split('.')[0] + '.html'
@@ -496,19 +505,20 @@ class CaseRunner:
         except FileExistsError:
             pass
 
-        if 'test' in os.path.splitext(file_name)[0] and os.path.splitext(file_name)[1] == '.py':
+        if 'test' in os.path.splitext(file_name)[0] and os.path.splitext(file_name)[1].startswith('.py'):
             # 是pytest 脚本
             try:
-                p = subprocess.Popen(
-                    '/root/.virtualenvs/testtools/bin/pytest {} -vv -s --html={} --self-contained-html '
-                    '--result-log={} --junit-xml={}'.format(
-                        os.path.join(settings.BASE_DIR, 'case_house', case_path),
-                        os.path.join(report_path, report_name), os.path.join(report_path, result_log_name),
-                        os.path.join(report_path, xml_name)),
-                    shell=True, stdout=subprocess.PIPE)
+                cmd = '{} {} -vv -s --html={} --self-contained-html --result-log={} --junit-xml={}'.format(
+                    os.path.join(venv_path, 'bin/pytest'),
+                    os.path.join(settings.BASE_DIR, 'case_house', case_path),
+                    os.path.join(report_path, report_name),
+                    os.path.join(report_path, result_log_name),
+                    os.path.join(report_path, xml_name))
+                logger.info(cmd)
+                p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, cwd=cmd_path)
                 out = p.stdout
                 read_data = out.read().decode("utf-8", "ignore")
-                # case_job.log = read_data
+                case_job.log = read_data
                 case_job.report_path = '/media/html-report/{}/{}/{}/{}'.format(project_id, test_plan_uid, task_id,
                                                                                report_name)
                 case_result = read_data.split('\n')[-2]
@@ -522,11 +532,13 @@ class CaseRunner:
                 case_job.save()
                 return False
         elif os.path.splitext(file_name)[1] == '.py':
+            # 普通python脚本
             try:
                 p = subprocess.Popen(
-                    '/root/.virtualenvs/testtools/bin/python3 {}'.format(
-                        os.path.join(settings.BASE_DIR, 'case_house', case_path)),
-                    shell=True, stdout=subprocess.PIPE)
+                    '{} {}'.format(
+                        os.path.join(venv_path, 'bin/python'),
+                        os.path.join(settings.BASE_DIR, 'case_house', case_path)), shell=True, stdout=subprocess.PIPE,
+                    cwd=cmd_path)
                 out = p.stdout
                 read_data = out.read().decode("utf-8", "ignore")
                 case_job.log = read_data
@@ -539,23 +551,25 @@ class CaseRunner:
                 case_job.save()
                 return False
         elif os.path.splitext(file_name)[1] == '.yml':
+            # HttpRunner脚本
             try:
                 case_task_id = case_job.case_task_id
                 test_plan_uid = CaseTestPlanTaskModel.objects.get(id=case_task_id).test_plan_uid
                 env_file = CaseTestPlanModel.objects.get(plan_id=test_plan_uid).env_file
                 if env_file:
                     p = subprocess.Popen(
-                        '/root/.virtualenvs/testtools/bin/hrun {} --dot-env-path {} --report-file {}'.format(
+                        '{} {} --dot-env-path {} --report-file {}'.format(
+                            os.path.join(venv_path, 'bin/hrun'),
                             os.path.join(settings.BASE_DIR, 'case_house', case_path),
                             os.path.join(settings.BASE_DIR, 'case_house', env_file),
                             os.path.join(report_path, report_name)),
-                        shell=True, stdout=subprocess.PIPE)
+                        shell=True, stdout=subprocess.PIPE, cwd=cmd_path)
                 else:
-                    p = subprocess.Popen(
-                        '/root/.virtualenvs/testtools/bin/hrun {} --report-file {}'.format(
-                            os.path.join(settings.BASE_DIR, 'case_house', case_path),
-                            os.path.join(report_path, report_name)),
-                        shell=True, stdout=subprocess.PIPE)
+                    p = subprocess.Popen('{} {} --report-file {}'.format(
+                        os.path.join(venv_path, 'bin/hrun'),
+                        os.path.join(settings.BASE_DIR, 'case_house', case_path),
+                        os.path.join(report_path, report_name)),
+                        shell=True, stdout=subprocess.PIPE, cwd=cmd_path)
                 out = p.stdout
                 read_data = out.read().decode("utf-8", "ignore")
                 case_job.report_path = '/media/html-report/{}/{}/{}/{}'.format(project_id, test_plan_uid, task_id,

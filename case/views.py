@@ -320,6 +320,13 @@ class CaseCollectList(APIView):
         :return
         """
         case_path = request.query_params.dict().get('path')
+        case_dir = '/'.join(case_path.split('/')[0:3])
+        default_venv = ConfigParser.get_config('python_venv', 'venv_path')
+        case_venv = os.path.join(settings.BASE_DIR, 'case_house', case_dir, 'venv')
+        if os.path.exists(case_venv):
+            venv_path = case_venv
+        else:
+            venv_path = default_venv
         if case_path:
             # 有指定文件 表示要获取case详情
             try:
@@ -330,20 +337,25 @@ class CaseCollectList(APIView):
                     if platform.system().lower() == "linux":
                         # Linux系统
                         p = subprocess.Popen(
-                            "pytest {} --collect-only -q | head -n -2".format(p_file), cwd=p_dir,
+                            "{} {} --collect-only -qq | head -n -3".format(os.path.join(venv_path, 'bin/pytest'),
+                                                                           p_file), cwd=p_dir,
                             shell=True, stdout=subprocess.PIPE)
                     elif platform.system().lower() == "darwin":
                         # Mac系统
                         p = subprocess.Popen(
-                            "pytest {} --collect-only -q | ghead -n -2".format(p_file), cwd=p_dir,
+                            "{} {} --collect-only -qq | ghead -n -3".format(os.path.join(venv_path, 'bin/pytest'),
+                                                                            p_file), cwd=p_dir,
                             shell=True, stdout=subprocess.PIPE)
                     out = p.stdout
                     read_data = out.read().decode("utf-8", "ignore")
                     if "ERROR" in read_data:
                         subCasesList = []
                     else:
-                        subCasesList = [{"label": case, "filepath": os.path.join(relative_path_dir, case)} for case in
-                                        read_data.split('\n')[:-1]]
+                        subCasesList = [
+                            {"label": case.split('/')[-1],
+                             "filepath": os.path.join(relative_path_dir, case.split('/')[-1])} for case
+                            in
+                            read_data.split('\n')[:-1]]
                     return JsonResponse({"success": True, "subCaseList": subCasesList})
                 else:
                     return JsonResponse({"success": True, "subCaseList": []})
