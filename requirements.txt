@@ -1,7 +1,6 @@
 allure-pytest==2.8.18
 allure-python-commons==2.8.18
 amqp==2.6.1
-anyjson==0.3.3
 asgiref==3.4.0
 async-generator==1.10
 async-timeout==3.0.1
