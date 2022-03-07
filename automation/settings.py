@@ -138,9 +138,9 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 base_dn = 'dc=example,dc=org'  # 请求的域名后缀为：cloud.cn
-AUTH_LDAP_SERVER_URI = 'ldap://42.192.200.79'  # LDAP系统的地址及端口号
-AUTH_LDAP_BIND_DN = 'cn=tester01.guest,ou=People,dc=example,dc=org'  # 以admin身份查找用户及相关信息
-AUTH_LDAP_BIND_PASSWORD = 'tester123'  # admin账号的密码
+AUTH_LDAP_SERVER_URI = 'ldap://42.192.200.79:389'  # LDAP系统的地址及端口号
+AUTH_LDAP_BIND_DN = 'cn=admin,dc=example,dc=org'  # 以admin身份查找用户及相关信息
+AUTH_LDAP_BIND_PASSWORD = 'admin'  # admin账号的密码
 AUTH_LDAP_USER_SEARCH = LDAPSearch('ou=People,%s' % base_dn, ldap.SCOPE_SUBTREE, "(uid=%(user)s)")
 # 第一个参数指定查询目录，第三个参数是过滤条件，过滤条件可以很复杂，有需要请查看相关文档．
 AUTH_LDAP_ALWAYS_UPDATE_USER = True
