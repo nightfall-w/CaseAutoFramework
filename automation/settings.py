@@ -100,8 +100,8 @@ DATABASES = {
 }
 
 # REDIS SERVER
-REDIS_SERVER = '127.0.0.1'
-RABBITMQ = '127.0.0.1'
+REDIS_SERVER = 'localhost'
+RABBITMQ = 'localhost'
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -138,15 +138,16 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 base_dn = 'dc=example,dc=org'  # 请求的域名后缀为：cloud.cn
-AUTH_LDAP_SERVER_URI = 'ldap://42.192.200.79:389'  # LDAP系统的地址及端口号
-AUTH_LDAP_BIND_DN = 'cn=admin,ou=admin,dc=example,dc=org'  # 以admin身份查找用户及相关信息
+AUTH_LDAP_SERVER_URI = 'ldap://localhost:389'  # LDAP系统的地址及端口号
+AUTH_LDAP_BIND_DN = 'cn=admin,dc=example,dc=org'  # 以admin身份查找用户及相关信息
 AUTH_LDAP_BIND_PASSWORD = 'admin'  # admin账号的密码
-AUTH_LDAP_USER_SEARCH = LDAPSearch('ou=People,%s' % base_dn, ldap.SCOPE_SUBTREE, "(uid=%(user)s)")
+AUTH_LDAP_USER_SEARCH = LDAPSearch('%s' % base_dn, ldap.SCOPE_SUBTREE,
+                                   "(sn=%(user)s)")
 # 第一个参数指定查询目录，第三个参数是过滤条件，过滤条件可以很复杂，有需要请查看相关文档．
 AUTH_LDAP_ALWAYS_UPDATE_USER = True
 AUTH_LDAP_USER_ATTR_MAP = {
-    "first_name": "first_name",
-    "last_name": "last_name",
+    "first_name": "givenName",
+    "last_name": "sn",
     "email": "mail"
 }
 
