@@ -52,8 +52,6 @@ class UsernameMobileAuthBackend(ModelBackend):
     """
 
     def authenticate(self, request, username=None, password=None, **kwargs):
-        print(username)
-        print(password)
         # ldap认证
         try:
             user = ldap_authenticate(request, username, password)
