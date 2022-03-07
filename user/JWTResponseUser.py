@@ -43,6 +43,8 @@ def get_user_by_account(account):
 
 
 def ldap_authenticate(request, username, password):
+    print(username)
+    print(password)
     return LDAPBackend().authenticate(request, username, password)
 
 
@@ -55,6 +57,7 @@ class UsernameMobileAuthBackend(ModelBackend):
         # ldap认证
         try:
             user = ldap_authenticate(request, username, password)
+            print(user)
             if user:
                 return user
         except Exception as e:
