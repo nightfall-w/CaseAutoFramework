@@ -1,6 +1,6 @@
 ## CaseAutoFramework
-
-> 项目描述
+> 在线地址：[在线演示地址](http://42.192.200.79/)   提供账号：tester01.guest     tester02.guest      tester03.guest    密码都是tester123
+> 项目描述 
 > 1. 这是一个基于python Django开发的一套自动化测试平台后端
 > 2. 支持接口自动化，且支持DDT数据驱动（各种请求方式，正则断言，定界符断言，参数结果提取，传递变量）
 > 3. 目前支持pytest， unittest的case调度，执行，结果处理
