@@ -19,6 +19,11 @@ class StatusManager(metaclass=ABCMeta):
 class CaseStatusManager(StatusManager):
     @database_sync_to_async
     def get_task_result(self, request_data):
+        print(request_data)
+        print(CaseTestPlanTaskModel.objects.filter(test_plan_uid=request_data.get('case_test_plan_uid')).order_by(
+            '-id').values(
+            'case_task_uid', 'test_plan_uid', 'id', 'state',
+            'finish_num', 'create_date', 'used_time'))
         return CaseTestPlanTaskModel.objects.filter(test_plan_uid=request_data.get('case_test_plan_uid')).order_by(
             '-id').values(
             'case_task_uid', 'test_plan_uid', 'id', 'state',
