@@ -76,7 +76,7 @@ Naked==0.1.31
 openpyxl==3.0.9
 outcome==1.1.0
 packaging==20.4
-Pillow==8.4.0
+Pillow==9.0.1
 pluggy==0.13.1
 prometheus-client==0.8.0
 prompt-toolkit==3.0.10
