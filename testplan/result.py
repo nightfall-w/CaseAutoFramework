@@ -25,6 +25,7 @@ class CaseStatusManager(StatusManager):
             'case_task_uid', 'test_plan_uid', 'id', 'state',
             'finish_num', 'create_date', 'used_time')[request_data.get('offset'):request_data.get('limit')]
         print(value_list)
+        return value_list
 
     @database_sync_to_async
     def get_job_result(self, request_data):
