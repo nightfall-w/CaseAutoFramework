@@ -68,7 +68,7 @@ jsonfield==3.1.0
 jsonpath==0.82
 jsonschema==3.2.0
 kombu==4.6.11
-lxml==4.6.3
+lxml==4.9.1
 MarkupSafe==1.1.1
 monotonic==1.5
 more-itertools==8.4.0
