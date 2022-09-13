@@ -45,7 +45,7 @@ dwebsocket==0.5.12
 et-xmlfile==1.1.0
 eventlet==0.25.2
 filetype==1.0.7
-flower==0.9.7
+flower==1.2.0
 funky==0.0.2
 future==0.18.2
 gevent==21.1.2
