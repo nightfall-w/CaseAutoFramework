@@ -11,7 +11,7 @@ Automat==20.2.0
 autopep8==1.5.3
 billiard==3.6.3.0
 celery==4.4.5
-certifi==2019.11.28
+certifi==2022.12.7
 cffi==1.14.5
 channels==2.4.0
 chardet==3.0.4
